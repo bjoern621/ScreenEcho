@@ -2,6 +2,9 @@ const localStorageDarkmodeKey: string = "darkmode-enabled";
 const darkmodeClassName: string = "dark";
 let isDarkmode: boolean = false;
 
+/**
+ * Toggles darkmode class on document.body appropriately.
+ */
 export function toggleDarkmode() {
     setDarkmode(!isDarkmode);
 }
