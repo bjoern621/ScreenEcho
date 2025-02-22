@@ -1,8 +1,8 @@
 import { useState } from "react";
-import reactLogo from "../assets/react.svg";
+import reactLogo from "/src/assets/react.svg";
 import viteLogo from "/vite.svg";
 import "./App.css";
-import { toggleDarkmode } from "../services/DarkmodeService";
+import { toggleDarkmode } from "../../services/DarkmodeService";
 
 function App() {
     const [count, setCount] = useState(0);
