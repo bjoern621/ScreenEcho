@@ -26,7 +26,7 @@ export function initDarkmode() {
             "(prefers-color-scheme: dark)"
         ).matches;
     } else {
-        shouldSetDarkmode = darkmodeStorage == "true";
+        shouldSetDarkmode = darkmodeStorage === "true";
     }
 
     setDarkmode(shouldSetDarkmode);
