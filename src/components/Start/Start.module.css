@@ -36,3 +36,9 @@
         height: 32px;
     }
 }
+
+.join-button {
+    composes: colored-button from global;
+    --color: transparent;
+    --pressed-color: var(--grey-3);
+}

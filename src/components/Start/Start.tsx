@@ -12,14 +12,9 @@ export default function Start() {
                     <p className={css.centerText}>Teile deinen Bildschirm</p>
                     <ControlMenu></ControlMenu>
                     <p className={css.centerText}>oder trete einem Raum bei</p>
-                    <div
-                        style={{
-                            backgroundColor: "var(--grey-7)",
-                            height: "40px",
-                            width: "300px",
-                            justifySelf: "center",
-                        }}
-                    ></div>
+                    <div>
+                        <button className={css.joinButton}>Beitreten</button>
+                    </div>
                 </div>
                 <div className={css.scrollForMore}>
                     <span>Scrolle für mehr Informationen</span>
