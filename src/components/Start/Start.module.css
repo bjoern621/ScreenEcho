@@ -10,7 +10,6 @@
 .header {
     width: 100%;
     border-bottom: 2px solid var(--on-layer-0);
-    /* background-color: blueviolet; */
 
     display: flex;
     padding-left: 25px;
