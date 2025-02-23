@@ -28,12 +28,13 @@ body {
     --white: #fefff9;
 
     &:not(.dark) {
-        --light-green: #69a297;
-        --green: #44ac9e;
+        --light-green: #85e58c;
+        --green: #60d394;
         --light-yellow: #f8e281;
         --yellow: #ecb236;
-        --light-red: #dc4b4a;
-        --red: #b73636;
+        --light-red: #ee6055;
+        --red: #dc4b4a;
+        --dark-red: #b73636;
         /* --light-blue: #3581b8; */
         --light-blue: #74c0fc;
         --blue: #0e6ba8;
@@ -53,11 +54,12 @@ body {
     }
 
     &.dark {
-        --light-green: #69a297;
-        --green: #44ac9e;
+        --light-green: #aaf683;
+        --green: #60d394;
         --dark-green: #267267;
         --yellow: #ecb236;
         --dark-yellow: #b58622;
+        --light-red: #ff9b85;
         --red: #e72a6e;
         --dark-red: #95234c;
         --light-blue: #74c0fc;

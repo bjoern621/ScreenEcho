@@ -16,7 +16,7 @@
     border: 2.5px solid var(--outline-color);
     padding: 15px 32px;
 
-    background-color: #63e6be;
+    background-color: var(--light-green);
     color: var(--outline-color);
 
     border-radius: 10px;
