@@ -1,0 +1,60 @@
+.container {
+    border: 3px solid var(--layer-2);
+    border-radius: 10px;
+
+    width: 450px;
+    height: 70px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.share-button {
+    --outline-color: rgb(24, 49, 83);
+
+    border: 2.5px solid var(--outline-color);
+    padding: 15px 32px;
+
+    background-color: #63e6be;
+    color: var(--outline-color);
+
+    border-radius: 10px;
+    box-shadow: 5px 5px var(--outline-color);
+
+    &:hover {
+        transform: translate(-2px, -2px);
+        box-shadow: 7px 7px var(--outline-color);
+    }
+
+    &:focus&:not(:focus-visible) {
+        transform: translate(2px, 2px);
+        box-shadow: 3px 3px var(--outline-color);
+        background-color: var(--green);
+    }
+
+    &:focus-visible {
+        outline: 4px solid var(--light-blue);
+        outline-offset: 1px;
+    }
+
+    transition-property: transform, box-shadow;
+    transition-duration: 0.1s;
+    transition-timing-function: ease-out;
+
+    display: flex;
+    align-items: center;
+    gap: 15px;
+
+    > img {
+        height: 20px;
+    }
+
+    font-weight: bold;
+}
+
+@keyframes button-press {
+    to {
+        translatey: 2px;
+    }
+}
