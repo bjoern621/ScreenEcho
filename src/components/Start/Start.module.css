@@ -37,6 +37,15 @@
     }
 }
 
+.join-container {
+    display: flex;
+    gap: 15px;
+}
+
+.room-number-input {
+    flex: 1;
+}
+
 .join-button {
     composes: colored-button from global;
     --color: var(--grey-2);

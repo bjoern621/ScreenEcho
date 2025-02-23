@@ -12,7 +12,12 @@ export default function Start() {
                     <p className={css.centerText}>Teile deinen Bildschirm</p>
                     <ControlMenu></ControlMenu>
                     <p className={css.centerText}>oder trete einem Raum bei</p>
-                    <div>
+                    <div className={css.joinContainer}>
+                        <input
+                            type="text"
+                            maxLength={6}
+                            className={css.roomNumberInput}
+                        />
                         <button className={css.joinButton}>Beitreten</button>
                     </div>
                 </div>
