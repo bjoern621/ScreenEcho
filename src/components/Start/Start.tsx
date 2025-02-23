@@ -1,17 +1,17 @@
 import ControlMenu from "../ControlMenu/ControlMenu";
-import "./Start.css";
+import css from "./Start.module.css";
 
 export default function Start() {
     return (
         <>
-            <div className="container">
-                <div className="header">
+            <div className={css.container}>
+                <div className={css.header}>
                     <h2>Screen Echo</h2>
                 </div>
-                <div className="room-create-or-join">
-                    <p className="center-text">Teile deinen Bildschirm</p>
+                <div className={css.roomCreateOrJoin}>
+                    <p className={css.centerText}>Teile deinen Bildschirm</p>
                     <ControlMenu></ControlMenu>
-                    <p className="center-text">oder trete einem Raum bei</p>
+                    <p className={css.centerText}>oder trete einem Raum bei</p>
                     <div
                         style={{
                             backgroundColor: "var(--grey-7)",
@@ -21,10 +21,9 @@ export default function Start() {
                         }}
                     ></div>
                 </div>
-                <div>
-                    <p className="scroll-for-more">
-                        Scrolle für mehr Informationen
-                    </p>
+                <div className={css.scrollForMore}>
+                    <span>Scrolle für mehr Informationen</span>
+                    <img src="/src/assets/icons8-expand-arrow-64.png" alt="" />
                 </div>
             </div>
         </>

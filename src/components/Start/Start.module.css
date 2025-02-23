@@ -9,10 +9,13 @@
 
 .header {
     width: 100%;
-    background-color: blueviolet;
+    border-bottom: 2px solid var(--on-layer-0);
+    /* background-color: blueviolet; */
 
     display: flex;
     padding-left: 25px;
+
+    font-size: 1.4rem;
 }
 
 .room-create-or-join {
@@ -24,5 +27,13 @@
 }
 
 .scroll-for-more {
-    color: var(--grey-4);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    color: var(--on-layer-0);
+
+    > img {
+        height: 32px;
+    }
 }
