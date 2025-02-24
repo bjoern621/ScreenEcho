@@ -1,0 +1,9 @@
+.container {
+    border: 1px solid var(--black);
+    border-radius: 10px;
+
+    width: 600px;
+    aspect-ratio: 16 / 9;
+
+    background-color: var(--grey-7);
+}

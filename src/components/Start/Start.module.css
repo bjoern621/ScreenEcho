@@ -49,6 +49,6 @@
 .join-button {
     composes: colored-button from global;
     --color: var(--grey-2);
-    --pressed-color: var(--grey-3);
+    --pressed-color: var(--grey-4);
     --outline-color: rgb(24, 49, 83);
 }

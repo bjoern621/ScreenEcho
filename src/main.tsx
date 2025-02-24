@@ -5,6 +5,7 @@ import App from "./components/App/App.tsx";
 import { initDarkmode } from "./services/DarkmodeService.ts";
 import { BrowserRouter, Route, Routes } from "react-router";
 import Start from "./components/Start/Start.tsx";
+import Room from "./components/Room/Room.tsx";
 
 initDarkmode();
 
@@ -13,6 +14,7 @@ createRoot(document.getElementById("root")!).render(
         <BrowserRouter>
             <Routes>
                 <Route path="/" element={<Start />} />
+                <Route path="room/:roomNumber" element={<Room />} />
             </Routes>
             <App />
         </BrowserRouter>

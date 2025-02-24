@@ -1,3 +1,4 @@
+import { Link } from "react-router";
 import ControlMenu from "../ControlMenu/ControlMenu";
 import css from "./Start.module.css";
 
@@ -18,7 +19,11 @@ export default function Start() {
                             maxLength={6}
                             className={css.roomNumberInput}
                         />
-                        <button className={css.joinButton}>Beitreten</button>
+                        <Link to={"/room/1234"}>
+                            <button className={css.joinButton}>
+                                Beitreten
+                            </button>
+                        </Link>
                     </div>
                 </div>
                 <div className={css.scrollForMore}>
