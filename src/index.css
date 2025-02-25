@@ -60,7 +60,7 @@ body {
         --yellow: #ecb236;
         --dark-yellow: #b58622;
         --light-red: #ff9b85;
-        --red: #e72a6e;
+        --red: #dc4b4a;
         --dark-red: #95234c;
         --light-blue: #74c0fc;
         --blue: #536cbb;
@@ -127,7 +127,13 @@ img {
         box-shadow: 7px 7px var(--outline-color);
     }
 
-    &:focus&:not(:focus-visible) {
+    /* &:focus&:not(:focus-visible) {
+        transform: translate(2px, 2px);
+        box-shadow: 3px 3px var(--outline-color);
+        background-color: var(--pressed-color);
+    } */
+
+    &:active {
         transform: translate(2px, 2px);
         box-shadow: 3px 3px var(--outline-color);
         background-color: var(--pressed-color);
@@ -139,6 +145,6 @@ img {
     }
 
     transition-property: transform, box-shadow, background-color;
-    transition-duration: 0.1s;
+    transition-duration: 0.05s;
     transition-timing-function: ease-in;
 }
