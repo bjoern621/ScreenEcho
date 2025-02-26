@@ -1,6 +1,5 @@
 import { useRef } from "react";
 import css from "./ControlMenu.module.css";
-import advance from "/src/assets/icons8-advance-64.png";
 import errorAsValue from "../../util/ErrorAsValue";
 
 interface ControlMenuProps {
@@ -41,7 +40,7 @@ export default function ControlMenu(props: ControlMenuProps) {
         tracks.current = captureStream.getTracks();
 
         tracks.current.forEach((track: MediaStreamTrack) => {
-            track.onended = (_ev: Event) => stopCapture();
+            track.onended = () => stopCapture();
         });
 
         props.onStartStream(captureStream);
@@ -74,7 +73,6 @@ export default function ControlMenu(props: ControlMenuProps) {
                     ) : (
                         <span>Bildschirm teilen</span>
                     )}
-                    {/* <img src={advance} /> */}
                 </button>
             </div>
         </>

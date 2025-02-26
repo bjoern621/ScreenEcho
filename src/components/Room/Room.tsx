@@ -5,10 +5,12 @@ import ControlMenu from "../ControlMenu/ControlMenu";
 import { useState } from "react";
 
 export default function Room() {
-    let { roomNumber } = useParams();
+    const { roomNumber } = useParams();
     const [streamActive, setStreamActive] = useState<boolean>(false);
     const [streamSrcObject, setSrcObject] = useState<MediaStream | null>(null);
 
+    // (testing only)
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     function getStreams(): string[] {
         return ["udo", "peter", "max"];
     }

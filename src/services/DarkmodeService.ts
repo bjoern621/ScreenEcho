@@ -19,7 +19,7 @@ function setDarkmode(enableDarkmode: boolean) {
  * Initializes the darkmode state. Uses the local storage entry primarily and prefers-color-scheme as an alternative.
  */
 export function initDarkmode() {
-    let darkmodeStorage: string | null = localStorage.getItem(
+    const darkmodeStorage: string | null = localStorage.getItem(
         localStorageDarkmodeKey
     );
 
