@@ -1,6 +1,7 @@
 import { useRef } from "react";
 import css from "./ControlMenu.module.css";
 import advance from "/src/assets/icons8-advance-64.png";
+import errorAsValue from "../../util/ErrorAsValue";
 
 interface ControlMenuProps {
     /** Toggles whether the start or stop streaming button is displayed. */
@@ -22,32 +23,28 @@ const streamOptions: DisplayMediaStreamOptions = {
 export default function ControlMenu(props: ControlMenuProps) {
     const tracks = useRef<MediaStreamTrack[]>([]);
 
-    function startCapture(): void {
-        navigator.mediaDevices
-            .getDisplayMedia(streamOptions)
-            .catch(err => console.log(err))
-            .then((result: MediaStream | void) => {
-                if (result === undefined) {
-                    console.warn("hmm");
-                    return;
-                }
+    async function startCapture(): Promise<void> {
+        const [err, captureStream] = await errorAsValue(
+            navigator.mediaDevices.getDisplayMedia(streamOptions)
+        );
+        if (err) {
+            console.warn(err);
+            return;
+        }
 
-                let captureStream: MediaStream = result;
+        if (captureStream.getTracks().length != 1) {
+            console.warn(
+                "Mutiple MediaStreamTracks detected. There should only ever be one."
+            );
+        }
 
-                if (captureStream.getTracks().length != 1) {
-                    console.warn(
-                        "Mutiple MediaStreamTracks detected. There should only ever be one."
-                    );
-                }
+        tracks.current = captureStream.getTracks();
 
-                tracks.current = captureStream.getTracks();
+        tracks.current.forEach((track: MediaStreamTrack) => {
+            track.onended = (_ev: Event) => stopCapture();
+        });
 
-                tracks.current.forEach((track: MediaStreamTrack) => {
-                    track.onended = (_ev: Event) => stopCapture();
-                });
-
-                props.onStartStream(captureStream);
-            });
+        props.onStartStream(captureStream);
     }
 
     function stopCapture(): void {
