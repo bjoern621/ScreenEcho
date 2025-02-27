@@ -1,4 +1,4 @@
-name: ci docker publish
+name: CI Docker publish image
 
 on:
   push:
@@ -13,11 +13,11 @@ on:
 
 jobs:
   lint:
-    name: Run Lint check
+    name: Run lint check
     uses: ./.github/workflows/ci-eslint.yml
   
   docker:
-    name: Create Docker image and publish it to Dockerhub
+    name: Run Dockerfile and publish image to Dockerhub
     needs: lint
     runs-on: ubuntu-latest
     steps:
