@@ -1,4 +1,4 @@
-name: ci eslint
+name: CI Eslint
 on: 
   push:
   workflow_call:
