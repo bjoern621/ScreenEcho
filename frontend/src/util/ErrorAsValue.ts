@@ -1,11 +1,11 @@
-export default function errorAsValue<T>(
+export default function ErrorAsValue<T>(
     promise: Promise<T>
-): Promise<[Error, undefined] | [undefined, T]> {
+): Promise<[T, undefined] | [undefined, Error]> {
     return promise
         .then(result => {
-            return [undefined, result] as [undefined, T];
+            return [result, undefined] as [T, undefined];
         })
         .catch(err => {
-            return [err, undefined];
+            return [undefined, err];
         });
 }

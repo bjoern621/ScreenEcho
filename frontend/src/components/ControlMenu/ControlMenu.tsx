@@ -1,6 +1,6 @@
 import { useRef } from "react";
 import css from "./ControlMenu.module.css";
-import errorAsValue from "../../util/ErrorAsValue";
+import ErrorAsValue from "../../util/ErrorAsValue";
 
 interface ControlMenuProps {
     /** Toggles whether the start or stop streaming button is displayed. */
@@ -23,7 +23,7 @@ export default function ControlMenu(props: ControlMenuProps) {
     const tracks = useRef<MediaStreamTrack[]>([]);
 
     async function startCapture(): Promise<void> {
-        const [err, captureStream] = await errorAsValue(
+        const [captureStream, err] = await ErrorAsValue(
             navigator.mediaDevices.getDisplayMedia(streamOptions)
         );
         if (err) {
