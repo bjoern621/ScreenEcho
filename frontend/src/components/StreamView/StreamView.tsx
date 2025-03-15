@@ -1,5 +1,5 @@
 import { useRef } from "react";
-import css from "./StreamView.module.css";
+import css from "./StreamView.module.scss";
 
 interface StreamViewProps {
     videoSrc: MediaProvider | null;

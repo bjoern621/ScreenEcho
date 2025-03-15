@@ -1,5 +1,5 @@
 .container {
-    border: 1px solid var(--black);
+    // border: 2px solid var(--black);
     border-radius: 10px;
 
     width: 600px;
@@ -8,6 +8,8 @@
     background-color: var(--grey-7);
 
     overflow: hidden;
+
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
 }
 
 .video {
