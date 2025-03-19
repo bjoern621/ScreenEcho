@@ -15,7 +15,7 @@ createRoot(document.getElementById("root")!).render(
         <BrowserRouter>
             <Routes>
                 <Route path="/" element={<Start />} />
-                <Route path="room/:roomNumber" element={<Room />} />
+                <Route path="room/:roomID" element={<Room />} />
                 <Route path="*" element={<PageNotFound />} />
             </Routes>
             <App />

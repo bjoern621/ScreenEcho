@@ -1,6 +1,7 @@
 import { useRef } from "react";
 import css from "./ControlMenu.module.css";
-import ErrorAsValue from "../../util/ErrorAsValue";
+import errorAsValue from "../../util/ErrorAsValue";
+import * as RoomService from "../../services/RoomService";
 
 interface ControlMenuProps {
     /** Toggles whether the start or stop streaming button is displayed. */
@@ -23,7 +24,7 @@ export default function ControlMenu(props: ControlMenuProps) {
     const tracks = useRef<MediaStreamTrack[]>([]);
 
     async function startCapture(): Promise<void> {
-        const [captureStream, err] = await ErrorAsValue(
+        const [captureStream, err] = await errorAsValue(
             navigator.mediaDevices.getDisplayMedia(streamOptions)
         );
         if (err) {
@@ -42,6 +43,25 @@ export default function ControlMenu(props: ControlMenuProps) {
         tracks.current.forEach((track: MediaStreamTrack) => {
             track.onended = () => stopCapture();
         });
+
+        interface StreamStartedMessage extends RoomService.TypedMessage {
+            type: "stream-started";
+            msg: {
+                Quality: string;
+                Name: string;
+            };
+        }
+
+        const message: StreamStartedMessage = {
+            type: "stream-started",
+            msg: { Quality: "1080p", Name: "my cool Stream" },
+        };
+
+        RoomService.sendMessage(message);
+
+        // const service = new WebRTCService.WebRTCService();
+        // service.makeCall();
+        // service.listenToJoiningUsers();
 
         props.onStartStream(captureStream);
     }

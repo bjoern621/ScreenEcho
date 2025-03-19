@@ -1,4 +1,4 @@
-export default function ErrorAsValue<T>(
+export default function errorAsValue<T>(
     promise: Promise<T>
 ): Promise<[T, undefined] | [undefined, Error]> {
     return promise

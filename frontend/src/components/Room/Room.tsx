@@ -2,12 +2,26 @@ import { useParams } from "react-router";
 import StreamView from "../StreamView/StreamView";
 import css from "./Room.module.css";
 import ControlMenu from "../ControlMenu/ControlMenu";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import * as RoomService from "../../services/RoomService";
+import * as Assert from "../../util/Assert";
 
 export default function Room() {
-    const { roomNumber } = useParams();
+    const { roomID } = useParams();
     const [streamActive, setStreamActive] = useState<boolean>(false);
     const [streamSrcObject, setSrcObject] = useState<MediaStream | null>(null);
+
+    useEffect(() => {
+        console.log("room loaded");
+
+        Assert.assert(
+            roomID,
+            "roomID can't be undefined because then it's routed to 404"
+        );
+
+        RoomService.connectToRoom(roomID);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     // (testing only)
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -17,7 +31,7 @@ export default function Room() {
 
     return (
         <div className={css.container}>
-            Room: {roomNumber}
+            Room: {roomID}
             <StreamView videoSrc={streamSrcObject}></StreamView>
             <ControlMenu
                 isStreaming={streamActive}
