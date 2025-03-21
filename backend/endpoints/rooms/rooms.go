@@ -19,40 +19,10 @@ import (
 
 var upgrader = websocket.Upgrader{CheckOrigin: func(r *http.Request) bool { return true }}
 
-type RoomID string
-
 var (
-	rooms      = make(map[RoomID]*Room)
+	rooms      = make(map[RoomID]*Room) // Mapping RoomID <-> Room is redundant here because it's already done in Room struct, but most efficient
 	roomsMutex sync.RWMutex
 )
-
-// Room represents a collection of WebSockets between the server and joined clients of the room.
-type Room struct {
-	connections map[*websocket.Conn]bool
-	rw          sync.RWMutex
-}
-
-func (room *Room) addConnection(conn *websocket.Conn) {
-	log.Println("add")
-
-	room.rw.Lock()
-	defer room.rw.Unlock()
-
-	assert.Assert(room.connections[conn] == false, "couldn't add connection because connection is already part of the room")
-
-	room.connections[conn] = true
-}
-
-func (room *Room) removeConnection(conn *websocket.Conn) {
-	log.Println("remove")
-
-	room.rw.Lock()
-	defer room.rw.Unlock()
-
-	assert.Assert(room.connections[conn] == true, "couldn't remove connection because there was no active connection")
-
-	delete(room.connections, conn)
-}
 
 func createRoom(roomID RoomID) *Room {
 	newRoom := &Room{
@@ -71,20 +41,8 @@ func GetRoomById(roomID RoomID) *Room {
 	return rooms[roomID]
 }
 
-// Broadcast sends a websocket message to all clients in the room except for the sender.
-// The sender can be nil, effectively broadcasting to all clients.
-func (room *Room) Broadcast(messageType int, message []byte, sender *websocket.Conn) {
-	for conn := range room.connections {
-		if conn == sender {
-			continue
-		}
-
-		if err := conn.WriteMessage(messageType, message); err != nil {
-			return
-		}
-	}
-}
-
+// HandleConnect establishes the WebSocket connection between client and server and listens to send messages.
+// It handles incoming messages by forwarding them according to their TypedMessage type.
 func HandleConnect(writer http.ResponseWriter, request *http.Request) {
 	log.Println("handle connect")
 
@@ -113,6 +71,13 @@ func HandleConnect(writer http.ResponseWriter, request *http.Request) {
 		if err != nil {
 			// WebSocket is closed
 			room.removeConnection(conn)
+
+			if room.GetClientCount() <= 0 {
+				roomsMutex.Lock()
+				delete(rooms, roomID)
+				roomsMutex.Unlock()
+				log.Printf("Room %s is now empty and has been removed", roomID)
+			}
 			return
 		}
 
@@ -126,7 +91,7 @@ func HandleConnect(writer http.ResponseWriter, request *http.Request) {
 				Msg:  nil,
 			})
 
-			conn.WriteJSON(TypedMessageResponse{
+			_ = conn.WriteJSON(TypedMessageResponse{
 				Type: "error",
 				Msg: ErrorMessage{
 					ErrorMessage: fmt.Sprintf("Message had invalid JSON format. %s", err.Error()),
