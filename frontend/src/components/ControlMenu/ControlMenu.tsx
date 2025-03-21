@@ -1,7 +1,7 @@
 import { useRef } from "react";
 import css from "./ControlMenu.module.css";
 import errorAsValue from "../../util/ErrorAsValue";
-import * as RoomService from "../../services/RoomService";
+import * as StreamsService from "../../services/StreamsService";
 
 interface ControlMenuProps {
     /** Toggles whether the start or stop streaming button is displayed. */
@@ -44,26 +44,13 @@ export default function ControlMenu(props: ControlMenuProps) {
             track.onended = () => stopCapture();
         });
 
-        interface StreamStartedMessage extends RoomService.TypedMessage {
-            type: "stream-started";
-            msg: {
-                Quality: string;
-                Name: string;
-            };
-        }
-
-        const message: StreamStartedMessage = {
-            type: "stream-started",
-            msg: { Quality: "1080p", Name: "my cool Stream" },
-        };
-
-        RoomService.sendMessage(message);
-
         // const service = new WebRTCService.WebRTCService();
         // service.makeCall();
         // service.listenToJoiningUsers();
 
         props.onStartStream(captureStream);
+
+        StreamsService.sendStreamStartedMessage();
     }
 
     function stopCapture(): void {
@@ -73,6 +60,8 @@ export default function ControlMenu(props: ControlMenuProps) {
         tracks.current = [];
 
         props.onEndStream();
+
+        StreamsService.sendStreamStoppedMessage();
     }
 
     return (

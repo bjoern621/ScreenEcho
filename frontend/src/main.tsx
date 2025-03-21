@@ -7,8 +7,10 @@ import { BrowserRouter, Route, Routes } from "react-router";
 import Start from "./components/Start/Start.tsx";
 import Room from "./components/Room/Room.tsx";
 import PageNotFound from "./components/PageNotFound/PageNotFound.tsx";
+import * as StreamsService from "./services/StreamsService.ts";
 
 initDarkmode();
+StreamsService.Init(); // may be better suited in Room.tsx
 
 createRoot(document.getElementById("root")!).render(
     <StrictMode>

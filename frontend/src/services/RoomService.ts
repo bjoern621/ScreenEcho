@@ -1,6 +1,14 @@
-let roomSocket: WebSocket;
+import * as Assert from "../util/Assert";
 
-export function connectToRoom(roomID: string) {
+// Represents the currently active WebSocket connection to the server.
+// The WebSocket connection state may be anything.
+let roomSocket: WebSocket | undefined;
+
+export function connectToRoom(roomID: string): Error | undefined {
+    if (roomSocket != undefined) {
+        return new Error("Socket is already connected.");
+    }
+
     roomSocket = new WebSocket(
         "ws://localhost:8080/room/" + roomID + "/connect"
     );
@@ -8,45 +16,82 @@ export function connectToRoom(roomID: string) {
     roomSocket.onmessage = event => {
         console.log("response form server: " + event.data);
 
-        console.log(event);
+        const typedMessage: TypedMessage<unknown> = JSON.parse(event.data);
+
+        // Notify all subscribers for this message type
+        const handlers = messageHandlers.get(typedMessage.type);
+        if (handlers) {
+            handlers.forEach(handler => handler(typedMessage));
+        }
+    };
+
+    roomSocket.onclose = () => {
+        roomSocket = undefined;
     };
 }
 
-export function sendMessage(message: TypedMessage) {
-    console.log(123);
+export function closeActiveConnection() {
+    Assert.assert(roomSocket);
+
+    roomSocket.close();
+}
+
+// Typed messages
+
+export type MessageHandler = (typedMessage: TypedMessage<unknown>) => void;
+
+const messageHandlers: Map<MessageType, MessageHandler[]> = new Map();
+
+type MessageType = string;
+
+export type TypedMessage<T = unknown> = {
+    type: MessageType;
+    msg: T;
+};
+
+export type ErrorMessage = {
+    errorMessage: string;
+    expected?: string;
+    actual?: string;
+};
+
+export function sendMessage<T>(message: TypedMessage<T>) {
+    Assert.assert(roomSocket);
 
     roomSocket.send(JSON.stringify(message));
 }
 
-export interface TypedMessage {
-    type: string;
+/**
+ * Subscribe to a specific message type.
+ */
+export function subscribeMessage(
+    messageType: MessageType,
+    handler: MessageHandler
+): void {
+    if (!messageHandlers.has(messageType)) {
+        messageHandlers.set(messageType, []);
+    }
+
+    const handlers = messageHandlers.get(messageType);
+    Assert.assert(handlers);
+
+    handlers.push(handler);
 }
 
-// type CreateRoomResponse = {
-//     success: boolean;
-//     message: string;
-// };
+/**
+ * Unsubscribe from a specific message type.
+ * The handler must be subscribed to the message type.
+ */
+export function unsubscribeMessage(
+    messageType: MessageType,
+    handler: MessageHandler
+): void {
+    const handlers = messageHandlers.get(messageType);
+    Assert.assert(handlers);
+    Assert.assert(handlers.includes(handler));
 
-// export async function createNewRoom(roomID: string) {
-//     const [response, err] = await errorAsValue(
-//         fetch("http://localhost:8080/room/create?roomID=" + roomID, {
-//             method: "POST",
-//         })
-//     );
-//     if (err) {
-//         return;
-//     }
+    const index = handlers.indexOf(handler);
+    Assert.assert(index != -1);
 
-//     const [jsonBody, err2] = await errorAsValue<CreateRoomResponse>(
-//         response.json()
-//     );
-//     if (err2) {
-//         return;
-//     }
-
-//     if (jsonBody.success) {
-//         console.log("Room created successfully:", jsonBody.message);
-//     } else {
-//         console.error("Error creating room:", jsonBody.message);
-//     }
-// }
+    handlers.splice(index, 1);
+}
