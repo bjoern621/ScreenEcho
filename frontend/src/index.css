@@ -3,6 +3,11 @@
     src: url(assets/Lexend/Lexend-VariableFont_wght.1.ttf);
 }
 
+@font-face {
+    font-family: Hanuman;
+    src: url(assets/Hanuman/Hanuman-Regular.ttf);
+}
+
 * {
     box-sizing: border-box;
 }
@@ -51,6 +56,11 @@ body {
         --on-layer-2: var(--grey-6);
         --on-layer-3: var(--grey-7);
         --on-layer-4: var(--grey-8);
+
+        --background: var(--white);
+        --text: var(--black);
+
+        --border: #e4e4e7;
     }
 
     &.dark {
@@ -77,10 +87,15 @@ body {
         --on-layer-2: var(--grey-2);
         --on-layer-3: var(--grey-1);
         --on-layer-4: var(--grey-0);
+
+        --background: var(--black);
+        --text: var(--white);
+
+        --border: #27272a;
     }
 
-    background-color: var(--layer-1);
-    color: var(--on-layer-1);
+    background-color: var(--background);
+    color: var(--text);
 
     font-family: Lexend;
 }
