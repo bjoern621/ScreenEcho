@@ -1,15 +1,33 @@
+@use "sass:color";
+
 .container {
-    // border: 2px solid var(--black);
     border-radius: 10px;
 
-    width: 600px;
+    min-width: 300px;
+    max-width: 800px; // set this via js?
     aspect-ratio: 16 / 9;
 
-    background-color: var(--grey-7);
+    // height: 100%;
+    // min-height: 100px;
+    // max-height: 600px; // set this via js?
 
     overflow: hidden;
 
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 1px 3px 0 rgba(var(--shadow-rgb), 0.1),
+        0 1px 2px -1px rgba(var(--shadow-rgb), 0.1);
+
+    border: 1px;
+    border-color: var(--border);
+    border-style: solid;
+
+    flex: 1;
+
+    // flex: 1 0 300px;
+    // flex: 1; // flex until one row is filled after one row is filled (second row started) dont fill space, meh actually fill but only to max width of 'first row'
+    // irgendwie wie oft passt min-width in alles? wie nicht komplett passt einen weniger und das skalieren, danach also wieder alle gleich breit
+    // diese breite ist dann alles / anzahl wie viele passen (+gaps?)
+
+    // flex: 1 0 0; // 1 0 0
 }
 
 .video {
