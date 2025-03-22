@@ -7,7 +7,18 @@ import tseslint from "typescript-eslint";
 export default tseslint.config(
     { ignores: ["dist"] },
     {
-        extends: [js.configs.recommended, ...tseslint.configs.recommended],
+        extends: [
+            js.configs.recommended,
+            ...tseslint.configs.recommendedTypeChecked, // https://typescript-eslint.io/getting-started/typed-linting/
+            {
+                languageOptions: {
+                    parserOptions: {
+                        projectService: true,
+                        tsconfigRootDir: import.meta.dirname,
+                    },
+                },
+            },
+        ],
         files: ["**/*.{ts,tsx}"],
         languageOptions: {
             ecmaVersion: 2020,
@@ -23,6 +34,8 @@ export default tseslint.config(
                 "warn",
                 { allowConstantExport: true },
             ],
+            "@typescript-eslint/explicit-member-accessibility": "error",
+            "@typescript-eslint/prefer-readonly": "error",
         },
     }
 );
