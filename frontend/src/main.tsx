@@ -1,7 +1,6 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import "./index.css";
-import App from "./components/App/App.tsx";
+import "./index.scss";
 import { initDarkmode } from "./services/DarkmodeService.ts";
 import { BrowserRouter, Route, Routes } from "react-router";
 import Start from "./components/Start/Start.tsx";
@@ -20,7 +19,6 @@ createRoot(document.getElementById("root")!).render(
                 <Route path="room/:roomID" element={<Room />} />
                 <Route path="*" element={<PageNotFound />} />
             </Routes>
-            <App />
         </BrowserRouter>
     </StrictMode>
 );

@@ -61,6 +61,7 @@ body {
         --text: var(--black);
 
         --border: #e4e4e7;
+        --shadow-rgb: 39, 39, 42;
     }
 
     &.dark {
@@ -92,6 +93,7 @@ body {
         --text: var(--white);
 
         --border: #27272a;
+        --shadow-rgb: 228, 228, 231;
     }
 
     background-color: var(--background);
