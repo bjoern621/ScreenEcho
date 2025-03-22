@@ -33,3 +33,12 @@
     align-items: center;
     gap: 25px;
 }
+
+.no-active-streams {
+    flex: 1;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    text-align: center;
+    gap: 25px;
+}

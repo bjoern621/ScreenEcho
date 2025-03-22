@@ -63,6 +63,18 @@ export default function Room() {
     return (
         <div className={css.container}>
             Room: {roomID}
+            {streams.length == 0 ? (
+                <div className={css.noActiveStreams}>
+                    <img
+                        src="/src/assets/sad.png"
+                        alt="Sad face emoji"
+                        style={{ width: "75px" }}
+                    />
+                    Aktuell teilt niemand seinen Bildschirm. <br />
+                    Starte jetzt deinen eigenen Stream über das Menü unten!
+                </div>
+            ) : (
+                <>
             <div className={css.activeStreamsContainer}>
                 <div className={css.activeStreams}>
                     {streams.map(stream =>
@@ -76,6 +88,8 @@ export default function Room() {
                 </div>
             </div>
             <InactiveStreams streams={streams}></InactiveStreams>
+                </>
+            )}
             {/* <StreamView videoSrc={streamSrcObject}></StreamView> */}
             <ControlMenu
                 isStreaming={localStreamActive}
