@@ -15,6 +15,6 @@ export function isUndefined(
     if (obj !== undefined) throw new AssertionError(msg);
 }
 
-export function never(msg?: string, _exp: boolean = false): asserts _exp {
+export function never(msg?: string): never {
     throw new AssertionError(msg);
 }
