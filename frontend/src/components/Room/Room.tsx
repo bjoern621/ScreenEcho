@@ -19,7 +19,16 @@ export default function Room() {
             "roomID can't be undefined because then it's routed to 404"
         );
 
-        RoomService.connectToRoom(roomID);
+        const roomService = new RoomService();
+        roomService.connectToRoom(roomID);
+
+        const streamsService = new StreamsService(roomService);
+        streamsService.fetchCurrentStreams();
+
+        return () => {
+            roomService.closeActiveConnection();
+        };
+
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 

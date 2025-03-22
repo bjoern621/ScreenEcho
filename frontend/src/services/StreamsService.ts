@@ -1,65 +1,74 @@
-import * as RoomService from "../services/RoomService";
-import { TypedMessage } from "../services/RoomService";
-// import * as Assert from "../util/Assert";
-
-const STREAM_STARTED_MESSAGE_TYPE: string = "stream-started";
-const STREAM_STOPPED_MESSAGE_TYPE: string = "stream-stopped";
-
-/**
- * Initializes the StreamsService by subscribing to stream-related messages.
- */
-export function Init() {
-    RoomService.subscribeMessage(
-        STREAM_STARTED_MESSAGE_TYPE,
-        handleStreamStarted as RoomService.MessageHandler
-    );
-    RoomService.subscribeMessage(
-        STREAM_STOPPED_MESSAGE_TYPE,
-        handleStreamStopped
-    );
-}
+import { RoomService, TypedMessage } from "./RoomService";
 
 type StreamStartedMessage = {
     Quality: string;
     Name: string;
 };
 
-export function sendStreamStartedMessage() {
-    const streamStarted: TypedMessage<StreamStartedMessage> = {
-        type: STREAM_STARTED_MESSAGE_TYPE,
-        msg: {
-            Name: "my super stream",
-            Quality: "1440p 120hz",
-        },
-    };
+export class StreamsService {
+    private readonly STREAM_STARTED_MESSAGE_TYPE: string = "stream-started";
+    private readonly STREAM_STOPPED_MESSAGE_TYPE: string = "stream-stopped";
 
-    RoomService.sendMessage(streamStarted);
-}
+    private readonly roomService: RoomService;
 
-function handleStreamStarted(
-    typedMessage: TypedMessage<StreamStartedMessage>
-): void {
-    console.log("handled");
+    /**
+     * Initializes the StreamsService by subscribing to stream-related messages.
+     */
+    public constructor(roomService: RoomService) {
+        this.roomService = roomService;
 
-    console.log(typedMessage);
+        roomService.subscribeMessage(
+            this.STREAM_STARTED_MESSAGE_TYPE,
+            message =>
+                this.handleStreamStarted(
+                    message as TypedMessage<StreamStartedMessage>
+                )
+        );
+        roomService.subscribeMessage(
+            this.STREAM_STOPPED_MESSAGE_TYPE,
+            message => this.handleStreamStopped(message)
+        );
+    }
 
-    // throw new Error("Function not implemented.");
-}
+    public fetchCurrentStreams() {}
 
-export function sendStreamStoppedMessage() {
-    const streamStopped: TypedMessage<unknown> = {
-        type: STREAM_STOPPED_MESSAGE_TYPE,
-        msg: {},
-    };
+    public sendStreamStartedMessage() {
+        const streamStarted: TypedMessage<StreamStartedMessage> = {
+            type: this.STREAM_STARTED_MESSAGE_TYPE,
+            msg: {
+                Name: "my super stream",
+                Quality: "1440p 120hz",
+            },
+        };
 
-    RoomService.sendMessage(streamStopped);
-}
+        this.roomService.sendMessage(streamStarted);
+    }
 
-function handleStreamStopped(
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    _typedMessage: TypedMessage<unknown>
-): void {
-    console.log("peer ended a stream");
+    private handleStreamStarted(
+        typedMessage: TypedMessage<StreamStartedMessage>
+    ): void {
+        console.log("handled");
 
-    // throw new Error("Function not implemented.");
+        console.log(typedMessage);
+
+        // throw new Error("Function not implemented.");
+    }
+
+    public sendStreamStoppedMessage() {
+        const streamStopped: TypedMessage<unknown> = {
+            type: this.STREAM_STOPPED_MESSAGE_TYPE,
+            msg: {},
+        };
+
+        this.roomService.sendMessage(streamStopped);
+    }
+
+    private handleStreamStopped(
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        _typedMessage: TypedMessage<unknown>
+    ): void {
+        console.log("peer ended a stream");
+
+        // throw new Error("Function not implemented.");
+    }
 }
