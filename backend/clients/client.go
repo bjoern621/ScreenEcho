@@ -1,4 +1,4 @@
-package client
+package clients
 
 import (
 	"bjoernblessin.de/screenecho/connection"

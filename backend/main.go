@@ -4,9 +4,9 @@ import (
 	"log"
 	"net/http"
 
-	"bjoernblessin.de/screenecho/client"
+	"bjoernblessin.de/screenecho/clients"
 	"bjoernblessin.de/screenecho/connection"
-	"bjoernblessin.de/screenecho/endpoints/rooms"
+	"bjoernblessin.de/screenecho/rooms"
 	"bjoernblessin.de/screenecho/streams"
 )
 
@@ -15,7 +15,7 @@ func main() {
 
 	connManager := connection.NewConnectionManager()
 
-	clientManager := client.NewClientManager()
+	clientManager := clients.NewClientManager()
 
 	roomManager := rooms.NewRoomManager(connManager, clientManager)
 

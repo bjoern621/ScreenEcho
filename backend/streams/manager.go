@@ -10,26 +10,26 @@ import (
 
 	"slices"
 
-	"bjoernblessin.de/screenecho/client"
+	"bjoernblessin.de/screenecho/clients"
 	"bjoernblessin.de/screenecho/connection"
-	"bjoernblessin.de/screenecho/endpoints/rooms"
+	"bjoernblessin.de/screenecho/rooms"
 	"bjoernblessin.de/screenecho/util/assert"
 	"bjoernblessin.de/screenecho/util/strictjson"
 )
 
 type StreamInfo struct {
-	clientID     client.ClientID
+	clientID     clients.ClientID
 	previewImage []byte
 }
 
 type StreamManager struct {
 	activeStreams      map[rooms.RoomID][]*StreamInfo
 	activeStreamsMutex sync.RWMutex
-	clientMananger     *client.ClientManager
+	clientMananger     *clients.ClientManager
 	roomManager        *rooms.RoomManager
 }
 
-func NewStreamManager(connManager *connection.ConnectionManager, clientManager *client.ClientManager, roomManager *rooms.RoomManager) *StreamManager {
+func NewStreamManager(connManager *connection.ConnectionManager, clientManager *clients.ClientManager, roomManager *rooms.RoomManager) *StreamManager {
 	sm := &StreamManager{
 		activeStreams:  make(map[rooms.RoomID][]*StreamInfo),
 		clientMananger: clientManager,
@@ -52,8 +52,7 @@ func NewStreamManager(connManager *connection.ConnectionManager, clientManager *
 
 func (sm *StreamManager) handleStreamStarted(conn *connection.Conn, typedMessage connection.TypedMessage[json.RawMessage]) {
 	type StreamStartedMessage struct {
-		Name    string
-		Quality string
+		ClientID string `json:"clientID"`
 	}
 
 	var message StreamStartedMessage

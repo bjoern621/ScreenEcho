@@ -1,7 +1,7 @@
 // Package client provides functionality for managing client information.
 // This includes general information like a display name but also a (WebSocket) connection.
 // Connections can be used to send bi-directional messages in real-time (milliseconds delay) to which can be subscribed.
-package client
+package clients
 
 import (
 	"log"

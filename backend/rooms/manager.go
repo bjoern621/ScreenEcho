@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"sync"
 
-	"bjoernblessin.de/screenecho/client"
+	"bjoernblessin.de/screenecho/clients"
 	"bjoernblessin.de/screenecho/connection"
 	"bjoernblessin.de/screenecho/util/assert"
 )
@@ -18,10 +18,10 @@ type RoomManager struct {
 	rooms         map[RoomID]*Room // Mapping RoomID <-> Room is redundant here because it's already done in Room struct, but most efficient
 	roomsMutex    sync.RWMutex
 	connManager   *connection.ConnectionManager
-	clientManager *client.ClientManager
+	clientManager *clients.ClientManager
 }
 
-func NewRoomManager(connManager *connection.ConnectionManager, clientManager *client.ClientManager) *RoomManager {
+func NewRoomManager(connManager *connection.ConnectionManager, clientManager *clients.ClientManager) *RoomManager {
 	return &RoomManager{
 		rooms:         make(map[RoomID]*Room),
 		connManager:   connManager,
@@ -42,7 +42,7 @@ func (rm *RoomManager) createEmptyRoom(roomID RoomID) *Room {
 
 // GetUsersRoom retrieves the room the user with clientID is connected to.
 // If no Room is found, the function returns nil.
-func (rm *RoomManager) GetUsersRoom(clientID client.ClientID) *Room {
+func (rm *RoomManager) GetUsersRoom(clientID clients.ClientID) *Room {
 	rm.roomsMutex.RLock()
 	defer rm.roomsMutex.RUnlock()
 

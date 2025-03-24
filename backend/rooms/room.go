@@ -4,7 +4,7 @@ import (
 	"log"
 	"sync"
 
-	"bjoernblessin.de/screenecho/client"
+	"bjoernblessin.de/screenecho/clients"
 	"bjoernblessin.de/screenecho/connection"
 	"bjoernblessin.de/screenecho/util/assert"
 )
@@ -14,20 +14,20 @@ type RoomID string
 // Room holds a collection of joined clients.
 type Room struct {
 	RoomID         RoomID
-	clientIDs      map[client.ClientID]bool
+	clientIDs      map[clients.ClientID]bool
 	clientIDsMutex sync.RWMutex
-	clientManager  *client.ClientManager
+	clientManager  *clients.ClientManager
 }
 
-func NewRoom(roomID RoomID, clientManager *client.ClientManager) *Room {
+func NewRoom(roomID RoomID, clientManager *clients.ClientManager) *Room {
 	return &Room{
 		RoomID:        roomID,
-		clientIDs:     make(map[client.ClientID]bool),
+		clientIDs:     make(map[clients.ClientID]bool),
 		clientManager: clientManager,
 	}
 }
 
-func (room *Room) addClient(clientID client.ClientID) {
+func (room *Room) addClient(clientID clients.ClientID) {
 	log.Println("add")
 
 	room.clientIDsMutex.Lock()
@@ -38,7 +38,7 @@ func (room *Room) addClient(clientID client.ClientID) {
 	room.clientIDs[clientID] = true
 }
 
-func (room *Room) removeClient(clientID client.ClientID) {
+func (room *Room) removeClient(clientID clients.ClientID) {
 	log.Println("remove")
 
 	room.clientIDsMutex.Lock()
@@ -52,7 +52,7 @@ func (room *Room) removeClient(clientID client.ClientID) {
 // Broadcast sends a websocket message to all clients in the room except for the sender.
 // The sender can be nil, effectively broadcasting to all clients.
 // See also [connection.SendMessage].
-func Broadcast[T any](room *Room, msg connection.TypedMessage[T], senderClientID client.ClientID) {
+func Broadcast[T any](room *Room, msg connection.TypedMessage[T], senderClientID clients.ClientID) {
 	room.clientIDsMutex.Lock()
 	defer room.clientIDsMutex.Unlock()
 
@@ -64,7 +64,7 @@ func Broadcast[T any](room *Room, msg connection.TypedMessage[T], senderClientID
 		receiver := room.clientManager.GetByID(clientID)
 		assert.IsNotNil(receiver)
 
-		client.SendMessage(receiver, msg)
+		clients.SendMessage(receiver, msg)
 	}
 }
 
