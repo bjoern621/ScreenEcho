@@ -1,49 +1,72 @@
 // Package rooms maintains a collection of Rooms.
 // A Room holds information about connected clients.
-// A connection is added to a room when a client joins the room and held until the client leaves the room.
-// Connections can be used to send bi-directional messages in real-time (milliseconds delay) to which can be subscribed.
-// This can be used e.g. for signaling purposes in WebRTC connectivity.
+// A client is part of a room as long as the client is connected to it.
+// A broadcast can be send to a room, this can be used e.g. for signaling purposes in WebRTC connectivity.
 package rooms
 
 import (
-	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 	"sync"
 
+	"bjoernblessin.de/screenecho/client"
+	"bjoernblessin.de/screenecho/connection"
 	"bjoernblessin.de/screenecho/util/assert"
-	"bjoernblessin.de/screenecho/util/strictjson"
-	"github.com/gorilla/websocket"
 )
 
-var upgrader = websocket.Upgrader{CheckOrigin: func(r *http.Request) bool { return true }}
+type RoomManager struct {
+	rooms         map[RoomID]*Room // Mapping RoomID <-> Room is redundant here because it's already done in Room struct, but most efficient
+	roomsMutex    sync.RWMutex
+	connManager   *connection.ConnectionManager
+	clientManager *client.ClientManager
+}
 
-var (
-	rooms      = make(map[RoomID]*Room) // Mapping RoomID <-> Room is redundant here because it's already done in Room struct, but most efficient
-	roomsMutex sync.RWMutex
-)
-
-func createRoom(roomID RoomID) *Room {
-	newRoom := &Room{
-		connections: make(map[*websocket.Conn]bool),
+func NewRoomManager(connManager *connection.ConnectionManager, clientManager *client.ClientManager) *RoomManager {
+	return &RoomManager{
+		rooms:         make(map[RoomID]*Room),
+		connManager:   connManager,
+		clientManager: clientManager,
 	}
+}
 
-	roomsMutex.Lock()
-	rooms[roomID] = newRoom
-	roomsMutex.Unlock()
+func (rm *RoomManager) createEmptyRoom(roomID RoomID) *Room {
+	newRoom := NewRoom(roomID, rm.clientManager)
+
+	rm.roomsMutex.Lock()
+	defer rm.roomsMutex.Unlock()
+
+	rm.rooms[roomID] = newRoom
 
 	return newRoom
 }
 
-// Room may be nil if the room with roomID doesn't exist.
-func GetRoomById(roomID RoomID) *Room {
-	return rooms[roomID]
+// GetUsersRoom retrieves the room the user with clientID is connected to.
+// If no Room is found, the function returns nil.
+func (rm *RoomManager) GetUsersRoom(clientID client.ClientID) *Room {
+	rm.roomsMutex.RLock()
+	defer rm.roomsMutex.RUnlock()
+
+	for _, room := range rm.rooms {
+		for id, _ := range room.clientIDs {
+			if id == clientID {
+				return room
+			}
+		}
+	}
+
+	return nil
 }
 
-// HandleConnect establishes the WebSocket connection between client and server and listens to send messages.
-// It handles incoming messages by forwarding them according to their TypedMessage type.
-func HandleConnect(writer http.ResponseWriter, request *http.Request) {
+// GetByID does exactly that.
+// The returned Room may be nil if the room with roomID doesn't exist.
+func (rm *RoomManager) GetById(roomID RoomID) *Room {
+	return rm.rooms[roomID]
+}
+
+// HandleConnect handles an HTTP request to establish a connection to a room.
+// The HTTP request is send to the connection package to establish a connection.
+// It is the main entry point for connecting clients.
+func (rm *RoomManager) HandleConnect(writer http.ResponseWriter, request *http.Request) {
 	log.Println("handle connect")
 
 	roomIDString := request.PathValue("roomID")
@@ -52,103 +75,27 @@ func HandleConnect(writer http.ResponseWriter, request *http.Request) {
 	}
 	roomID := RoomID(roomIDString)
 
-	room := GetRoomById(roomID)
+	room := rm.GetById(roomID)
 	if room == nil {
-		room = createRoom(roomID)
+		room = rm.createEmptyRoom(roomID)
 	}
 	assert.Assert(room != nil)
 
-	conn, err := upgrader.Upgrade(writer, request, nil)
+	conn, err := rm.connManager.EstablishWebSocket(writer, request)
 	if err != nil {
 		return
 	}
-	defer conn.Close()
 
-	room.addConnection(conn)
+	client := rm.clientManager.NewClient(conn)
 
-	for {
-		_, msg, err := conn.ReadMessage()
-		if err != nil {
-			// WebSocket is closed
-			room.removeConnection(conn)
+	room.addClient(client.ID)
 
-			if room.GetClientCount() <= 0 {
-				roomsMutex.Lock()
-				delete(rooms, roomID)
-				roomsMutex.Unlock()
-				log.Printf("Room %s is now empty and has been removed", roomID)
-			}
-			return
-		}
+	conn.AddCloseHandler(func() {
+		// TODO cleanup will fail if already disco before
+		log.Printf("close: remove client from room")
+		room.removeClient(client.ID)
+	})
 
-		log.Printf("%s", msg)
-
-		var typedMessage TypedMessageRequest
-		err = strictjson.Unmarshal(msg, &typedMessage)
-		if err != nil {
-			expectedJSON, _ := json.Marshal(TypedMessageRequest{
-				Type: "",
-				Msg:  nil,
-			})
-
-			_ = conn.WriteJSON(TypedMessageResponse{
-				Type: "error",
-				Msg: ErrorMessage{
-					ErrorMessage: fmt.Sprintf("Message had invalid JSON format. %s", err.Error()),
-					Expected:     fmt.Sprintf("Expected types like: %s", expectedJSON),
-					Actual:       fmt.Sprintf("Types of %s didn't match.", msg),
-				},
-			})
-
-			continue
-		}
-
-		ForwardMessage(room, conn, typedMessage)
-	}
-}
-
-/// Typed message handling
-
-var (
-	messageHandlers      = make(map[MessageType][]MessageHandler)
-	messageHandlersMutex sync.RWMutex
-)
-
-type MessageType string
-
-type TypedMessageRequest struct {
-	Type MessageType     `json:"type"`
-	Msg  json.RawMessage `json:"msg"`
-}
-
-type TypedMessageResponse struct {
-	Type MessageType `json:"type"`
-	Msg  any         `json:"msg"` // Allows embedding any type of response
-}
-
-type ErrorMessage struct {
-	ErrorMessage string `json:"errorMessage"`
-	Expected     string `json:"expected,omitempty"`
-	Actual       string `json:"actual,omitempty"`
-}
-
-type MessageHandler func(*Room, *websocket.Conn, TypedMessageRequest)
-
-// SubscribeMessage allows external packages to subscribe to specific message types.
-// There is no limit to the number of message handlers for one message type.
-func SubscribeMessage(messageType MessageType, handler MessageHandler) {
-	messageHandlersMutex.Lock()
-	defer messageHandlersMutex.Unlock()
-
-	messageHandlers[messageType] = append(messageHandlers[messageType], handler)
-}
-
-// ForwardMessage forwards a typed message to all handlers subscribed to its type.
-func ForwardMessage(room *Room, conn *websocket.Conn, typedMessage TypedMessageRequest) {
-	messageHandlersMutex.RLock()
-	defer messageHandlersMutex.RUnlock()
-
-	for _, handler := range messageHandlers[typedMessage.Type] {
-		go handler(room, conn, typedMessage)
-	}
+	// TODO remove client from room, connection, client, streams, when connection ends
+	// make onclose event?
 }

@@ -4,60 +4,73 @@ import (
 	"log"
 	"sync"
 
+	"bjoernblessin.de/screenecho/client"
+	"bjoernblessin.de/screenecho/connection"
 	"bjoernblessin.de/screenecho/util/assert"
-	"github.com/gorilla/websocket"
 )
 
 type RoomID string
 
-// Room represents a collection of WebSockets between the server and joined clients of the room.
+// Room holds a collection of joined clients.
 type Room struct {
-	RoomID      RoomID
-	connections map[*websocket.Conn]bool
-	rw          sync.RWMutex
+	RoomID         RoomID
+	clientIDs      map[client.ClientID]bool
+	clientIDsMutex sync.RWMutex
+	clientManager  *client.ClientManager
 }
 
-func (room *Room) addConnection(conn *websocket.Conn) {
+func NewRoom(roomID RoomID, clientManager *client.ClientManager) *Room {
+	return &Room{
+		RoomID:        roomID,
+		clientIDs:     make(map[client.ClientID]bool),
+		clientManager: clientManager,
+	}
+}
+
+func (room *Room) addClient(clientID client.ClientID) {
 	log.Println("add")
 
-	room.rw.Lock()
-	defer room.rw.Unlock()
+	room.clientIDsMutex.Lock()
+	defer room.clientIDsMutex.Unlock()
 
-	assert.Assert(room.connections[conn] == false, "couldn't add connection because connection is already part of the room")
+	assert.Assert(room.clientIDs[clientID] == false, "couldn't add client because client already joined the room")
 
-	room.connections[conn] = true
+	room.clientIDs[clientID] = true
 }
 
-func (room *Room) removeConnection(conn *websocket.Conn) {
+func (room *Room) removeClient(clientID client.ClientID) {
 	log.Println("remove")
 
-	room.rw.Lock()
-	defer room.rw.Unlock()
+	room.clientIDsMutex.Lock()
+	defer room.clientIDsMutex.Unlock()
 
-	assert.Assert(room.connections[conn] == true, "couldn't remove connection because there was no active connection")
+	assert.Assert(room.clientIDs[clientID] == true, "couldn't remove client because client was not connected to the room")
 
-	delete(room.connections, conn)
+	delete(room.clientIDs, clientID)
 }
 
 // Broadcast sends a websocket message to all clients in the room except for the sender.
 // The sender can be nil, effectively broadcasting to all clients.
-func (room *Room) Broadcast(msg any, sender *websocket.Conn) { // passing in struct but needing a msg in JSON format
-	if _, exists := room.connections[sender]; !exists {
-		log.Println("Sender connection not found in the room")
-	}
+// See also [connection.SendMessage].
+func Broadcast[T any](room *Room, msg connection.TypedMessage[T], senderClientID client.ClientID) {
+	room.clientIDsMutex.Lock()
+	defer room.clientIDsMutex.Unlock()
 
-	for conn := range room.connections {
-
-		if conn == sender {
+	for clientID := range room.clientIDs {
+		if clientID == senderClientID {
 			continue
 		}
 
-		if err := conn.WriteJSON(msg); err != nil {
-			return
-		}
+		receiver := room.clientManager.GetByID(clientID)
+		assert.IsNotNil(receiver)
+
+		client.SendMessage(receiver, msg)
 	}
 }
 
-func (room *Room) GetClientCount() int {
-	return len(room.connections)
+func (room *Room) isEmpty() bool {
+	room.clientIDsMutex.RLock()
+	defer room.clientIDsMutex.RUnlock()
+
+	return len(room.clientIDs) == 0
 }

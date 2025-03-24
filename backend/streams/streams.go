@@ -3,75 +3,112 @@
 package streams
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"sync"
 
 	"slices"
 
+	"bjoernblessin.de/screenecho/client"
+	"bjoernblessin.de/screenecho/connection"
 	"bjoernblessin.de/screenecho/endpoints/rooms"
+	"bjoernblessin.de/screenecho/util/assert"
 	"bjoernblessin.de/screenecho/util/strictjson"
-	"github.com/gorilla/websocket"
 )
 
 type StreamInfo struct {
-	conn         *websocket.Conn
+	clientID     client.ClientID
 	previewImage []byte
 }
 
-var (
-	activeStreams      = make(map[rooms.RoomID][]*StreamInfo)
+type StreamManager struct {
+	activeStreams      map[rooms.RoomID][]*StreamInfo
 	activeStreamsMutex sync.RWMutex
-)
-
-// Initialize initializes the stream-related message subscriptions.
-// It subscribes to the "stream-started" and "stream-stopped" messages
-// and associates them with their respective handlers.
-func Initialize() {
-	rooms.SubscribeMessage("stream-started", handleStreamStarted)
-	rooms.SubscribeMessage("stream-stopped", handleStreamStopped)
+	clientMananger     *client.ClientManager
+	roomManager        *rooms.RoomManager
 }
 
-func handleStreamStarted(room *rooms.Room, conn *websocket.Conn, typedMessage rooms.TypedMessageRequest) {
-	type streamStartedMessage struct {
+func NewStreamManager(connManager *connection.ConnectionManager, clientManager *client.ClientManager, roomManager *rooms.RoomManager) *StreamManager {
+	sm := &StreamManager{
+		activeStreams:  make(map[rooms.RoomID][]*StreamInfo),
+		clientMananger: clientManager,
+		roomManager:    roomManager,
+	}
+
+	connManager.SubscribeMessage("stream-started", sm.handleStreamStarted)
+	connManager.SubscribeMessage("stream-stopped", sm.handleStreamStopped)
+
+	return sm
+}
+
+// Init initializes the stream-related message subscriptions.
+// It subscribes to the "stream-started" and "stream-stopped" messages
+// and associates them with their respective handlers.
+// func Init() {
+// 	connection.SubscribeMessage("stream-started", handleStreamStarted)
+// 	connection.SubscribeMessage("stream-stopped", handleStreamStopped)
+// }
+
+func (sm *StreamManager) handleStreamStarted(conn *connection.Conn, typedMessage connection.TypedMessage[json.RawMessage]) {
+	type StreamStartedMessage struct {
 		Name    string
 		Quality string
 	}
 
-	var message streamStartedMessage
+	var message StreamStartedMessage
 	err := strictjson.Unmarshal(typedMessage.Msg, &message)
 	if err != nil {
-		conn.WriteJSON(rooms.TypedMessageResponse{
+		errorMsg := connection.TypedMessage[connection.ErrorMessage]{
 			Type: "error",
-			Msg: rooms.ErrorMessage{
-				ErrorMessage: fmt.Sprintf("Message had invalid JSON format. %s", err.Error()),
+			Msg: connection.ErrorMessage{
+				ErrorMessage: fmt.Sprintf("Message had invalid JSON format. %v", err),
 			},
-		})
+		}
+
+		connection.SendMessage(conn, errorMsg)
 		return
 	}
 
 	log.Printf("Stream started:")
 
-	activeStreamsMutex.Lock()
-	activeStreams[room.RoomID] = append(activeStreams[room.RoomID], &StreamInfo{conn: conn, previewImage: nil})
-	activeStreamsMutex.Unlock()
+	// TODO check if stream info already present
 
-	room.Broadcast(typedMessage, conn)
+	client := sm.clientMananger.GetByWebSocket(conn)
+	assert.IsNotNil(client)
+
+	room := sm.roomManager.GetUsersRoom(client.ID)
+	assert.IsNotNil(room)
+
+	sm.activeStreamsMutex.Lock()
+	defer sm.activeStreamsMutex.Unlock()
+
+	sm.activeStreams[room.RoomID] = append(sm.activeStreams[room.RoomID], &StreamInfo{clientID: client.ID, previewImage: nil})
+
+	rooms.Broadcast(room, typedMessage, client.ID)
 }
 
-func handleStreamStopped(room *rooms.Room, conn *websocket.Conn, typedMessage rooms.TypedMessageRequest) {
+func (sm *StreamManager) handleStreamStopped(conn *connection.Conn, typedMessage connection.TypedMessage[json.RawMessage]) {
 	log.Printf("Stream stopped ")
 
-	activeStreamsMutex.Lock()
-	defer activeStreamsMutex.Unlock()
+	// TODO check if stream info was present / remove was successful
 
-	streamsInRoom := activeStreams[room.RoomID]
+	client := sm.clientMananger.GetByWebSocket(conn)
+	assert.IsNotNil(client)
+
+	room := sm.roomManager.GetUsersRoom(client.ID)
+	assert.IsNotNil(room)
+
+	sm.activeStreamsMutex.Lock()
+	defer sm.activeStreamsMutex.Unlock()
+
+	streamsInRoom := sm.activeStreams[room.RoomID]
 	for i, stream := range streamsInRoom {
-		if stream.conn == conn {
-			activeStreams[room.RoomID] = slices.Delete(streamsInRoom, i, i+1)
+		if stream.clientID == client.ID {
+			sm.activeStreams[room.RoomID] = slices.Delete(streamsInRoom, i, i+1)
 			break
 		}
 	}
 
-	room.Broadcast(typedMessage, conn)
+	rooms.Broadcast(room, typedMessage, client.ID)
 }
