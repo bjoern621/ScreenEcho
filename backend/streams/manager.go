@@ -5,7 +5,6 @@ package streams
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"sync"
 
 	"slices"
@@ -57,8 +56,6 @@ func (sm *StreamManager) handleStreamStarted(client *clients.Client, typedMessag
 		return
 	}
 
-	log.Printf("Stream started:")
-
 	room := sm.roomManager.GetUsersRoom(client.ID)
 	assert.IsNotNil(room)
 
@@ -77,8 +74,6 @@ func (sm *StreamManager) handleStreamStarted(client *clients.Client, typedMessag
 }
 
 func (sm *StreamManager) handleStreamStopped(client *clients.Client, typedMessage connection.TypedMessage[json.RawMessage]) {
-	log.Printf("Stream stopped ")
-
 	// TODO check if stream info was present / remove was successful (before broadcasting)
 
 	room := sm.roomManager.GetUsersRoom(client.ID)

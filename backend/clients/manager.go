@@ -5,7 +5,6 @@ package clients
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 	"sync"
 
@@ -47,7 +46,6 @@ func (cm *ClientManager) NewClient(writer http.ResponseWriter, request *http.Req
 	client.sendClientID()
 
 	conn.AddCloseHandler(func() {
-		log.Printf("close: remove client from global list")
 		cm.removeClient(clientID)
 	})
 

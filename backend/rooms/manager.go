@@ -86,7 +86,6 @@ func (rm *RoomManager) HandleConnect(writer http.ResponseWriter, request *http.R
 	room.addClient(client.ID)
 
 	client.RegisterDisconnectHandler(func() {
-		log.Printf("close: remove client from room")
 		room.removeClient(client.ID)
 		if room.isEmpty() {
 			rm.deleteRoom(room)
