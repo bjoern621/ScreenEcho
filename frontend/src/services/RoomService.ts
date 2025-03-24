@@ -15,7 +15,18 @@ export type ErrorMessage = {
     actual?: string;
 };
 
+type ClientIDMessage = {
+    clientID: string;
+};
+
+/**
+ * The `RoomService` class provides functionality for managing the WebSocket connection
+ * to a room, sending and receiving typed messages, and subscribing to specific
+ * message types for event handling.
+ */
 export class RoomService {
+    private readonly CLIENT_ID_MESSAGE_TYPE: string = "client-id";
+
     // Represents the currently active WebSocket connection to the server.
     // The WebSocket connection state may be anything.
     private roomSocket: WebSocket | undefined;
@@ -23,9 +34,15 @@ export class RoomService {
     private readonly messageHandlers: Map<MessageType, MessageHandler[]> =
         new Map();
 
+    private localClientID: string | undefined;
+
+    public constructor() {
+        this.waitForLocalClientID();
+    }
+
     public connectToRoom(roomID: string): Error | undefined {
         if (this.roomSocket != undefined) {
-            return new Error("Socket is already connected.");
+            return new Error("Socket is already defined.");
         }
 
         this.roomSocket = new WebSocket(
@@ -39,6 +56,7 @@ export class RoomService {
                 console.error("Invalid message data type:", typeof event.data);
                 return;
             }
+
             const typedMessage: TypedMessage<unknown> = JSON.parse(
                 event.data
             ) as TypedMessage<unknown>;
@@ -52,9 +70,45 @@ export class RoomService {
     }
 
     /**
-     * Closes the currently active WebSocket connection if it exists and is open.
+     * Waits for the local client ID to be received via a message of type `CLIENT_ID_MESSAGE_TYPE`.
      *
-     * @returns {boolean} `true` if the connection was successfully closed or was already closed, and `false` if the connection is still in the process of being established.
+     * This method subscribes to messages of the specified type and sets the `localClientID` property
+     * when a message containing the client ID is received. Once the client ID is obtained, the
+     * subscription to the message type is automatically removed.
+     */
+    private waitForLocalClientID() {
+        const handleClientIDMessage = (
+            message: TypedMessage<ClientIDMessage>
+        ) => {
+            console.log("received client id: " + message.msg.clientID);
+
+            this.localClientID = message.msg.clientID;
+
+            this.unsubscribeMessage(
+                this.CLIENT_ID_MESSAGE_TYPE,
+                handleClientIDMessage as MessageHandler
+            );
+        };
+
+        this.subscribeMessage(
+            this.CLIENT_ID_MESSAGE_TYPE,
+            handleClientIDMessage as MessageHandler
+        );
+
+        // const getLocalClientIDMessage: TypedMessage<unknown> = {
+        //     type: this.CLIENT_ID_MESSAGE_TYPE,
+        //     msg: {},
+        // };
+
+        // this.sendMessage(getLocalClientIDMessage);
+    }
+
+    /**
+     * Closes the currently active WebSocket connection if it exists and is open.
+     * There must be an active connection (with any connection state).
+     *
+     * @returns {boolean}   `true` if the connection was successfully closed or was already closed, and `false` if the connection is still in the process of being established.
+     *                      If `true`, a new connection can be established.
      */
     public closeActiveConnection(): boolean {
         Assert.assert(this.roomSocket);
@@ -82,6 +136,8 @@ export class RoomService {
 
         this.roomSocket.send(JSON.stringify(message));
     }
+
+    // TODO subscribe / unsubcribe: specify if one handler can be subscribed to the same mssage type multiple times
 
     /**
      * Subscribe to a specific message type.
@@ -116,5 +172,11 @@ export class RoomService {
         Assert.assert(index != -1);
 
         handlers.splice(index, 1);
+    }
+
+    public getLocalClientID(): string {
+        Assert.assert(this.localClientID);
+
+        return this.localClientID;
     }
 }

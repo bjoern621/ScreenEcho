@@ -1,5 +1,5 @@
 class AssertionError extends Error {
-    constructor(msg?: string) {
+    public constructor(msg?: string) {
         super("[ASSERT] " + (msg || ""));
     }
 }

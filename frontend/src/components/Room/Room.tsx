@@ -2,7 +2,7 @@ import { useParams } from "react-router";
 import StreamView from "../StreamView/StreamView";
 import css from "./Room.module.scss";
 import ControlMenu from "../ControlMenu/ControlMenu";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import * as Assert from "../../util/Assert";
 import InactiveStreams from "../InactiveStreams/InactiveStreams";
 import { RoomService } from "../../services/RoomService";
@@ -17,7 +17,15 @@ export type Stream = {
 export default function Room() {
     const { roomID } = useParams();
     const [localStreamActive, setLocalStreamActive] = useState<boolean>(false);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [streamSrcObject, setSrcObject] = useState<MediaStream | null>(null);
+    const roomServiceRef = useRef<RoomService | undefined>(undefined);
+
+    if (!roomServiceRef.current) {
+        roomServiceRef.current = new RoomService();
+    }
+
+    const roomService = roomServiceRef.current;
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [streams, _setStreams] = useState<Stream[]>([
@@ -37,8 +45,11 @@ export default function Room() {
             "roomID can't be undefined because then it's routed to 404"
         );
 
-        const roomService = new RoomService();
-        roomService.connectToRoom(roomID);
+        // const roomService = new RoomService();
+        const err = roomService.connectToRoom(roomID);
+        if (err != undefined) {
+            console.warn("RoomService.connectToRoom() called multiple times");
+        }
 
         const streamsService = new StreamsService(roomService);
         streamsService.fetchCurrentStreams();
@@ -75,19 +86,19 @@ export default function Room() {
                 </div>
             ) : (
                 <>
-            <div className={css.activeStreamsContainer}>
-                <div className={css.activeStreams}>
-                    {streams.map(stream =>
-                        stream.isBeingWatched ? (
-                            <StreamView
-                                key={stream.ClientID}
-                                videoSrc={stream.SrcObject}
-                            />
-                        ) : null
-                    )}
-                </div>
-            </div>
-            <InactiveStreams streams={streams}></InactiveStreams>
+                    <div className={css.activeStreamsContainer}>
+                        <div className={css.activeStreams}>
+                            {streams.map(stream =>
+                                stream.isBeingWatched ? (
+                                    <StreamView
+                                        key={stream.ClientID}
+                                        videoSrc={stream.SrcObject}
+                                    />
+                                ) : null
+                            )}
+                        </div>
+                    </div>
+                    <InactiveStreams streams={streams}></InactiveStreams>
                 </>
             )}
             {/* <StreamView videoSrc={streamSrcObject}></StreamView> */}
@@ -101,6 +112,7 @@ export default function Room() {
                     setLocalStreamActive(false);
                     setSrcObject(null);
                 }}
+                roomService={roomService}
             ></ControlMenu>
         </div>
     );

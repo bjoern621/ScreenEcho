@@ -1,10 +1,14 @@
 import { RoomService, TypedMessage } from "./RoomService";
 
 type StreamStartedMessage = {
-    Quality: string;
-    Name: string;
+    clientID: string;
 };
 
+/**
+ * The `StreamsService` class is responsible for managing stream-related operations
+ * within a room. It handles subscribing to and sending stream
+ * start/stop messages, and processing incoming stream events.
+ */
 export class StreamsService {
     private readonly STREAM_STARTED_MESSAGE_TYPE: string = "stream-started";
     private readonly STREAM_STOPPED_MESSAGE_TYPE: string = "stream-stopped";
@@ -36,8 +40,7 @@ export class StreamsService {
         const streamStarted: TypedMessage<StreamStartedMessage> = {
             type: this.STREAM_STARTED_MESSAGE_TYPE,
             msg: {
-                Name: "my super stream",
-                Quality: "1440p 120hz",
+                clientID: this.roomService.getLocalClientID(),
             },
         };
 

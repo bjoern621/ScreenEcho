@@ -1,13 +1,15 @@
 import { useRef } from "react";
 import css from "./ControlMenu.module.css";
 import errorAsValue from "../../util/ErrorAsValue";
-import * as StreamsService from "../../services/StreamsService";
+import { StreamsService } from "../../services/StreamsService";
+import { RoomService } from "../../services/RoomService";
 
 interface ControlMenuProps {
     /** Toggles whether the start or stop streaming button is displayed. */
     isStreaming: boolean;
     onStartStream: (captureStream: MediaStream) => void;
     onEndStream: () => void;
+    roomService: RoomService;
 }
 
 const streamOptions: DisplayMediaStreamOptions = {
@@ -22,6 +24,13 @@ const streamOptions: DisplayMediaStreamOptions = {
 
 export default function ControlMenu(props: ControlMenuProps) {
     const tracks = useRef<MediaStreamTrack[]>([]);
+    const streamsServiceRef = useRef<StreamsService | undefined>(undefined);
+
+    if (!streamsServiceRef.current) {
+        streamsServiceRef.current = new StreamsService(props.roomService);
+    }
+
+    const streamsService = streamsServiceRef.current;
 
     async function startCapture(): Promise<void> {
         const [captureStream, err] = await errorAsValue(
@@ -50,7 +59,7 @@ export default function ControlMenu(props: ControlMenuProps) {
 
         props.onStartStream(captureStream);
 
-        StreamsService.sendStreamStartedMessage();
+        streamsService.sendStreamStartedMessage();
     }
 
     function stopCapture(): void {
@@ -61,7 +70,7 @@ export default function ControlMenu(props: ControlMenuProps) {
 
         props.onEndStream();
 
-        StreamsService.sendStreamStoppedMessage();
+        streamsService.sendStreamStoppedMessage();
     }
 
     return (
