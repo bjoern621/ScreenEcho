@@ -15,9 +15,9 @@ func main() {
 
 	connManager := connection.NewConnectionManager()
 
-	clientManager := clients.NewClientManager()
+	clientManager := clients.NewClientManager(connManager)
 
-	roomManager := rooms.NewRoomManager(connManager, clientManager)
+	roomManager := rooms.NewRoomManager(clientManager)
 
 	streams.NewStreamManager(connManager, clientManager, roomManager)
 

@@ -37,3 +37,9 @@ func (client *Client) sendClientID() {
 func SendMessage[T any](client *Client, msg connection.TypedMessage[T]) {
 	_ = connection.SendMessage(client.conn, msg)
 }
+
+// RegisterDisconnectHandler registers a handler function that is called when the client's connection is closed.
+// This allows for cleanup operations.
+func (client *Client) RegisterDisconnectHandler(handler func()) {
+	client.conn.AddCloseHandler(handler)
+}

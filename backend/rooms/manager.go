@@ -10,21 +10,18 @@ import (
 	"sync"
 
 	"bjoernblessin.de/screenecho/clients"
-	"bjoernblessin.de/screenecho/connection"
 	"bjoernblessin.de/screenecho/util/assert"
 )
 
 type RoomManager struct {
 	rooms         map[RoomID]*Room // Mapping RoomID <-> Room is redundant here because it's already done in Room struct, but most efficient
 	roomsMutex    sync.RWMutex
-	connManager   *connection.ConnectionManager
 	clientManager *clients.ClientManager
 }
 
-func NewRoomManager(connManager *connection.ConnectionManager, clientManager *clients.ClientManager) *RoomManager {
+func NewRoomManager(clientManager *clients.ClientManager) *RoomManager {
 	return &RoomManager{
 		rooms:         make(map[RoomID]*Room),
-		connManager:   connManager,
 		clientManager: clientManager,
 	}
 }
@@ -81,21 +78,29 @@ func (rm *RoomManager) HandleConnect(writer http.ResponseWriter, request *http.R
 	}
 	assert.Assert(room != nil)
 
-	conn, err := rm.connManager.EstablishWebSocket(writer, request)
+	client, err := rm.clientManager.NewClient(writer, request)
 	if err != nil {
 		return
 	}
 
-	client := rm.clientManager.NewClient(conn)
-
 	room.addClient(client.ID)
 
-	conn.AddCloseHandler(func() {
-		// TODO cleanup will fail if already disco before
+	client.RegisterDisconnectHandler(func() {
 		log.Printf("close: remove client from room")
 		room.removeClient(client.ID)
+		if room.isEmpty() {
+			rm.deleteRoom(room)
+		}
 	})
 
 	// TODO remove client from room, connection, client, streams, when connection ends
 	// make onclose event?
+}
+
+// deleteRoom removes room from the list of managed rooms if it exists.
+func (rm *RoomManager) deleteRoom(room *Room) {
+	rm.roomsMutex.Lock()
+	defer rm.roomsMutex.Unlock()
+
+	delete(rm.rooms, room.RoomID)
 }

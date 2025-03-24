@@ -5,6 +5,7 @@ package clients
 
 import (
 	"log"
+	"net/http"
 	"sync"
 
 	"bjoernblessin.de/screenecho/connection"
@@ -14,15 +15,22 @@ import (
 type ClientManager struct {
 	clients      map[ClientID]*Client
 	clientsMutex sync.RWMutex
+	connManager  *connection.ConnectionManager
 }
 
-func NewClientManager() *ClientManager {
+func NewClientManager(connManager *connection.ConnectionManager) *ClientManager {
 	return &ClientManager{
-		clients: make(map[ClientID]*Client),
+		clients:     make(map[ClientID]*Client),
+		connManager: connManager,
 	}
 }
 
-func (cm *ClientManager) NewClient(conn *connection.Conn) *Client {
+func (cm *ClientManager) NewClient(writer http.ResponseWriter, request *http.Request) (*Client, error) {
+	conn, err := cm.connManager.EstablishWebSocket(writer, request)
+	if err != nil {
+		return nil, err
+	}
+
 	var clientID = ClientID(uuid.New())
 
 	client := &Client{ID: clientID, DisplayName: "", conn: conn}
@@ -39,7 +47,7 @@ func (cm *ClientManager) NewClient(conn *connection.Conn) *Client {
 		cm.removeClient(clientID)
 	})
 
-	return client
+	return client, nil
 }
 
 func (cm *ClientManager) removeClient(clientID ClientID) {
@@ -49,9 +57,9 @@ func (cm *ClientManager) removeClient(clientID ClientID) {
 	delete(cm.clients, clientID)
 }
 
-// GetByWebSocket does exactly that.
+// GetClientByWebSocket does exactly that.
 // The returned Client may be nil if the client with conn doesn't exist.
-func (cm *ClientManager) GetByWebSocket(conn *connection.Conn) *Client {
+func (cm *ClientManager) GetClientByWebSocket(conn *connection.Conn) *Client {
 	cm.clientsMutex.RLock()
 	defer cm.clientsMutex.RUnlock()
 
@@ -63,8 +71,8 @@ func (cm *ClientManager) GetByWebSocket(conn *connection.Conn) *Client {
 	return nil
 }
 
-// GetByID does exactly that.
+// GetClientByID does exactly that.
 // The returned Client may be nil if the client with ID doesn't exist.
-func (cm *ClientManager) GetByID(id ClientID) *Client {
+func (cm *ClientManager) GetClientByID(id ClientID) *Client {
 	return cm.clients[id]
 }

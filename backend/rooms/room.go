@@ -38,13 +38,13 @@ func (room *Room) addClient(clientID clients.ClientID) {
 	room.clientIDs[clientID] = true
 }
 
+// removeClient removes the client with clientID from the room.
+// If the client is not part of the room, the method has no effect.
 func (room *Room) removeClient(clientID clients.ClientID) {
 	log.Println("remove")
 
 	room.clientIDsMutex.Lock()
 	defer room.clientIDsMutex.Unlock()
-
-	assert.Assert(room.clientIDs[clientID] == true, "couldn't remove client because client was not connected to the room")
 
 	delete(room.clientIDs, clientID)
 }
@@ -61,7 +61,7 @@ func Broadcast[T any](room *Room, msg connection.TypedMessage[T], senderClientID
 			continue
 		}
 
-		receiver := room.clientManager.GetByID(clientID)
+		receiver := room.clientManager.GetClientByID(clientID)
 		assert.IsNotNil(receiver)
 
 		clients.SendMessage(receiver, msg)

@@ -73,7 +73,7 @@ func (sm *StreamManager) handleStreamStarted(conn *connection.Conn, typedMessage
 
 	// TODO check if stream info already present
 
-	client := sm.clientMananger.GetByWebSocket(conn)
+	client := sm.clientMananger.GetClientByWebSocket(conn)
 	assert.IsNotNil(client)
 
 	room := sm.roomManager.GetUsersRoom(client.ID)
@@ -92,7 +92,7 @@ func (sm *StreamManager) handleStreamStopped(conn *connection.Conn, typedMessage
 
 	// TODO check if stream info was present / remove was successful
 
-	client := sm.clientMananger.GetByWebSocket(conn)
+	client := sm.clientMananger.GetClientByWebSocket(conn)
 	assert.IsNotNil(client)
 
 	room := sm.roomManager.GetUsersRoom(client.ID)
