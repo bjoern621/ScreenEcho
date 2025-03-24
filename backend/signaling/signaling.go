@@ -18,7 +18,7 @@ import (
 	"net/http"
 
 	"bjoernblessin.de/screenecho/connection"
-	"bjoernblessin.de/screenecho/endpoints/rooms"
+	"bjoernblessin.de/screenecho/rooms"
 	"github.com/gorilla/websocket"
 )
 

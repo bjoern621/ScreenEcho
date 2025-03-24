@@ -29,28 +29,20 @@ type StreamManager struct {
 	roomManager        *rooms.RoomManager
 }
 
-func NewStreamManager(connManager *connection.ConnectionManager, clientManager *clients.ClientManager, roomManager *rooms.RoomManager) *StreamManager {
+func NewStreamManager(clientManager *clients.ClientManager, roomManager *rooms.RoomManager) *StreamManager {
 	sm := &StreamManager{
 		activeStreams:  make(map[rooms.RoomID][]*StreamInfo),
 		clientMananger: clientManager,
 		roomManager:    roomManager,
 	}
 
-	connManager.SubscribeMessage("stream-started", sm.handleStreamStarted)
-	connManager.SubscribeMessage("stream-stopped", sm.handleStreamStopped)
+	clientManager.SubscribeMessage("stream-started", sm.handleStreamStarted)
+	clientManager.SubscribeMessage("stream-stopped", sm.handleStreamStopped)
 
 	return sm
 }
 
-// Init initializes the stream-related message subscriptions.
-// It subscribes to the "stream-started" and "stream-stopped" messages
-// and associates them with their respective handlers.
-// func Init() {
-// 	connection.SubscribeMessage("stream-started", handleStreamStarted)
-// 	connection.SubscribeMessage("stream-stopped", handleStreamStopped)
-// }
-
-func (sm *StreamManager) handleStreamStarted(conn *connection.Conn, typedMessage connection.TypedMessage[json.RawMessage]) {
+func (sm *StreamManager) handleStreamStarted(client *clients.Client, typedMessage connection.TypedMessage[json.RawMessage]) {
 	type StreamStartedMessage struct {
 		ClientID string `json:"clientID"`
 	}
@@ -65,16 +57,13 @@ func (sm *StreamManager) handleStreamStarted(conn *connection.Conn, typedMessage
 			},
 		}
 
-		connection.SendMessage(conn, errorMsg)
+		clients.SendMessage(client, errorMsg)
 		return
 	}
 
 	log.Printf("Stream started:")
 
 	// TODO check if stream info already present
-
-	client := sm.clientMananger.GetClientByWebSocket(conn)
-	assert.IsNotNil(client)
 
 	room := sm.roomManager.GetUsersRoom(client.ID)
 	assert.IsNotNil(room)
@@ -87,13 +76,10 @@ func (sm *StreamManager) handleStreamStarted(conn *connection.Conn, typedMessage
 	rooms.Broadcast(room, typedMessage, client.ID)
 }
 
-func (sm *StreamManager) handleStreamStopped(conn *connection.Conn, typedMessage connection.TypedMessage[json.RawMessage]) {
+func (sm *StreamManager) handleStreamStopped(client *clients.Client, typedMessage connection.TypedMessage[json.RawMessage]) {
 	log.Printf("Stream stopped ")
 
 	// TODO check if stream info was present / remove was successful
-
-	client := sm.clientMananger.GetClientByWebSocket(conn)
-	assert.IsNotNil(client)
 
 	room := sm.roomManager.GetUsersRoom(client.ID)
 	assert.IsNotNil(room)

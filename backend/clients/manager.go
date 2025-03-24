@@ -4,11 +4,13 @@
 package clients
 
 import (
+	"encoding/json"
 	"log"
 	"net/http"
 	"sync"
 
 	"bjoernblessin.de/screenecho/connection"
+	"bjoernblessin.de/screenecho/util/assert"
 	"github.com/google/uuid"
 )
 
@@ -17,6 +19,8 @@ type ClientManager struct {
 	clientsMutex sync.RWMutex
 	connManager  *connection.ConnectionManager
 }
+
+type MessageHandler func(*Client, connection.TypedMessage[json.RawMessage])
 
 func NewClientManager(connManager *connection.ConnectionManager) *ClientManager {
 	return &ClientManager{
@@ -75,4 +79,14 @@ func (cm *ClientManager) GetClientByWebSocket(conn *connection.Conn) *Client {
 // The returned Client may be nil if the client with ID doesn't exist.
 func (cm *ClientManager) GetClientByID(id ClientID) *Client {
 	return cm.clients[id]
+}
+
+// SubscribeMessage is a wrapper for [connection.SubscribeMessage].
+func (cm *ClientManager) SubscribeMessage(messageType connection.MessageType, handler MessageHandler) connection.MessageHandlerID {
+	return cm.connManager.SubscribeMessage(messageType, func(conn *connection.Conn, tm connection.TypedMessage[json.RawMessage]) {
+		client := cm.GetClientByWebSocket(conn)
+		assert.IsNotNil(client)
+
+		handler(client, tm)
+	})
 }

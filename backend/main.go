@@ -19,7 +19,7 @@ func main() {
 
 	roomManager := rooms.NewRoomManager(clientManager)
 
-	streams.NewStreamManager(connManager, clientManager, roomManager)
+	streams.NewStreamManager(clientManager, roomManager)
 
 	http.HandleFunc("/room/{roomID}/connect", roomManager.HandleConnect)
 	// http.HandleFunc("/room/create", rooms.HandleCreate)
