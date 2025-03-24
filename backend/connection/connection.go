@@ -55,6 +55,8 @@ func NewConnectionManager() *ConnectionManager {
 	}
 }
 
+const ERROR_MESSAGE_TYPE = "error"
+
 // TODO CheckOrigin
 
 var upgrader = websocket.Upgrader{CheckOrigin: func(r *http.Request) bool { return true }}
@@ -90,7 +92,7 @@ func (cm *ConnectionManager) EstablishWebSocket(writer http.ResponseWriter, requ
 // If an error occurs while reading a message (e.g., the WebSocket is closed), the function exits.
 func (cm *ConnectionManager) listenToMessages(conn *Conn) {
 	defer func() {
-		log.Printf("listenToMessages exited, closing socket")
+		// log.Printf("listenToMessages exited, closing socket")
 		_ = conn.socket.Close()
 	}()
 
@@ -99,18 +101,10 @@ func (cm *ConnectionManager) listenToMessages(conn *Conn) {
 		if err != nil {
 			// WebSocket is closed
 			for _, closeHandler := range conn.closeHandlers {
-				log.Printf("sending close message to one handler")
+				// log.Printf("sending close message to one handler")
 				closeHandler()
 			}
-			// TODO
-			// room.removeConnection(conn)
 
-			// if room.GetConnectionCount() <= 0 {
-			// 	roomsMutex.Lock()
-			// 	delete(rooms, roomID)
-			// 	roomsMutex.Unlock()
-			// 	log.Printf("Room %s is now empty and has been removed", roomID)
-			// }
 			return
 		}
 
@@ -184,8 +178,7 @@ func (cm *ConnectionManager) UnsubscribeMessage(messageType MessageType, handler
 	wrappersForMessageTyoe := cm.messageHandlers[messageType]
 	for i, wrapper := range wrappersForMessageTyoe {
 		if wrapper.id == handlerID {
-			cm.messageHandlers[messageType] = slices.Delete(wrappersForMessageTyoe, i, i)
-			// messageHandlers[messageType] = append(handlerWrappers[:i], handlerWrappers[i+1:]...)
+			cm.messageHandlers[messageType] = slices.Delete(wrappersForMessageTyoe, i, i+1)
 			break
 		}
 	}
@@ -231,4 +224,14 @@ func SendMessage[T any](conn *Conn, msg TypedMessage[T]) error {
 
 	err := conn.socket.WriteJSON(msg)
 	return err
+}
+
+// BuildErrorMessage is a helper function that returns an error message with only ErrorMessage set.
+func BuildErrorMessage(msg string) TypedMessage[ErrorMessage] {
+	return TypedMessage[ErrorMessage]{
+		Type: ERROR_MESSAGE_TYPE,
+		Msg: ErrorMessage{
+			ErrorMessage: msg,
+		},
+	}
 }
