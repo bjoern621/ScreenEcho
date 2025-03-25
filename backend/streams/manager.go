@@ -79,8 +79,6 @@ func (sm *StreamManager) handleStreamStopped(client *clients.Client, typedMessag
 	room := sm.roomManager.GetUsersRoom(client.ID)
 	assert.IsNotNil(room)
 
-	// TODO cleanup RegisterDisconnectHandler from stream started handler?
-
 	sm.deleteClientsStream(client.ID, room)
 
 	rooms.Broadcast(room, typedMessage, client.ID)
