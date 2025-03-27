@@ -43,3 +43,7 @@ func SendMessage[T any](client *Client, msg connection.TypedMessage[T]) {
 func (client *Client) RegisterDisconnectHandler(handler func()) {
 	client.conn.AddCloseHandler(handler)
 }
+
+func (id ClientID) String() string {
+	return uuid.UUID(id).String()
+}

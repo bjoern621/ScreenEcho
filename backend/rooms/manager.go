@@ -5,11 +5,11 @@
 package rooms
 
 import (
-	"log"
 	"net/http"
 	"sync"
 
 	"bjoernblessin.de/screenecho/clients"
+	"bjoernblessin.de/screenecho/connection"
 	"bjoernblessin.de/screenecho/util/assert"
 )
 
@@ -56,7 +56,7 @@ func (rm *RoomManager) GetUsersRoom(clientID clients.ClientID) *Room {
 
 // GetByID does exactly that.
 // The returned Room may be nil if the room with roomID doesn't exist.
-func (rm *RoomManager) GetById(roomID RoomID) *Room {
+func (rm *RoomManager) GetRoomById(roomID RoomID) *Room {
 	return rm.rooms[roomID]
 }
 
@@ -64,15 +64,13 @@ func (rm *RoomManager) GetById(roomID RoomID) *Room {
 // The HTTP request is send to the connection package to establish a connection.
 // It is the main entry point for connecting clients.
 func (rm *RoomManager) HandleConnect(writer http.ResponseWriter, request *http.Request) {
-	log.Println("handle connect")
-
 	roomIDString := request.PathValue("roomID")
 	if roomIDString == "" {
 		return
 	}
 	roomID := RoomID(roomIDString)
 
-	room := rm.GetById(roomID)
+	room := rm.GetRoomById(roomID)
 	if room == nil {
 		room = rm.createEmptyRoom(roomID)
 	}
@@ -89,11 +87,10 @@ func (rm *RoomManager) HandleConnect(writer http.ResponseWriter, request *http.R
 		room.removeClient(client.ID)
 		if room.isEmpty() {
 			rm.deleteRoom(room)
+		} else {
+			room.sendDisconnectMessageToRemainingClients(client.ID)
 		}
 	})
-
-	// TODO remove client from room, connection, client, streams, when connection ends
-	// make onclose event?
 }
 
 // deleteRoom removes room from the list of managed rooms if it exists.
@@ -102,4 +99,21 @@ func (rm *RoomManager) deleteRoom(room *Room) {
 	defer rm.roomsMutex.Unlock()
 
 	delete(rm.rooms, room.RoomID)
+}
+
+const CLIENT_DISCONNECT_MESSAGE_TYPE = "client-disconnect"
+
+type clientDisconnectMessage struct {
+	ClientID string `json:"clientID"`
+}
+
+func (room *Room) sendDisconnectMessageToRemainingClients(clientID clients.ClientID) {
+	msg := connection.TypedMessage[clientDisconnectMessage]{
+		Type: CLIENT_DISCONNECT_MESSAGE_TYPE,
+		Msg: clientDisconnectMessage{
+			ClientID: clientID.String(),
+		},
+	}
+
+	Broadcast(room, msg, clientID)
 }
