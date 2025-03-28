@@ -19,14 +19,20 @@ type ClientIDMessage = {
     clientID: string;
 };
 
+export const CLIENT_DISCONNECT_MESSAGE_TYPE: MessageType = "client-disconnect";
+
+export type ClientDisconnectMessage = {
+    clientID: string;
+};
+
+const CLIENT_ID_MESSAGE_TYPE: string = "client-id";
+
 /**
  * The `RoomService` class provides functionality for managing the WebSocket connection
  * to a room, sending and receiving typed messages, and subscribing to specific
  * message types for event handling.
  */
 export class RoomService {
-    private readonly CLIENT_ID_MESSAGE_TYPE: string = "client-id";
-
     // Represents the currently active WebSocket connection to the server.
     // The WebSocket connection state may be anything.
     private roomSocket: WebSocket | undefined;
@@ -36,15 +42,19 @@ export class RoomService {
 
     private localClientID: string | undefined;
 
-    public constructor() {
+    /**
+     * Initializes a new instance of the RoomService class.
+     * Additionally, it connects to the specified room and waits for the local client ID.
+     */
+    public constructor(roomID: string) {
+        console.log("RoomService constructor called");
+
+        this.connectToRoom(roomID);
+
         this.waitForLocalClientID();
     }
 
-    public connectToRoom(roomID: string): Error | undefined {
-        if (this.roomSocket != undefined) {
-            return new Error("Socket is already defined.");
-        }
-
+    private connectToRoom(roomID: string) {
         this.roomSocket = new WebSocket(
             "ws://localhost:8080/room/" + roomID + "/connect"
         );
@@ -85,22 +95,15 @@ export class RoomService {
             this.localClientID = message.msg.clientID;
 
             this.unsubscribeMessage(
-                this.CLIENT_ID_MESSAGE_TYPE,
+                CLIENT_ID_MESSAGE_TYPE,
                 handleClientIDMessage as MessageHandler
             );
         };
 
         this.subscribeMessage(
-            this.CLIENT_ID_MESSAGE_TYPE,
+            CLIENT_ID_MESSAGE_TYPE,
             handleClientIDMessage as MessageHandler
         );
-
-        // const getLocalClientIDMessage: TypedMessage<unknown> = {
-        //     type: this.CLIENT_ID_MESSAGE_TYPE,
-        //     msg: {},
-        // };
-
-        // this.sendMessage(getLocalClientIDMessage);
     }
 
     /**

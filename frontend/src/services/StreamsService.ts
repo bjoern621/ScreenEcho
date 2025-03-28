@@ -1,8 +1,19 @@
-import { RoomService, TypedMessage } from "./RoomService";
+import {
+    CLIENT_DISCONNECT_MESSAGE_TYPE,
+    ClientDisconnectMessage,
+    RoomService,
+    TypedMessage,
+} from "./RoomService";
 
-type StreamStartedMessage = {
+type StreamMessage = {
     clientID: string;
 };
+
+type StreamStartedMessage = StreamMessage;
+type StreamStoppedMessage = StreamMessage;
+
+const STREAM_STARTED_MESSAGE_TYPE: string = "stream-started";
+const STREAM_STOPPED_MESSAGE_TYPE: string = "stream-stopped";
 
 /**
  * The `StreamsService` class is responsible for managing stream-related operations
@@ -10,35 +21,46 @@ type StreamStartedMessage = {
  * start/stop messages, and processing incoming stream events.
  */
 export class StreamsService {
-    private readonly STREAM_STARTED_MESSAGE_TYPE: string = "stream-started";
-    private readonly STREAM_STOPPED_MESSAGE_TYPE: string = "stream-stopped";
-
     private readonly roomService: RoomService;
+
+    /**
+     * A map that holds the currently active streams in the connected room.
+     */
+    private readonly activeStreams: Map<string, boolean> = new Map();
+    private listeners: ((streams: string[]) => void)[] = [];
 
     /**
      * Initializes the StreamsService by subscribing to stream-related messages.
      */
     public constructor(roomService: RoomService) {
+        console.log("StreamsService constructor called");
+
         this.roomService = roomService;
 
-        roomService.subscribeMessage(
-            this.STREAM_STARTED_MESSAGE_TYPE,
-            message =>
-                this.handleStreamStarted(
-                    message as TypedMessage<StreamStartedMessage>
-                )
+        roomService.subscribeMessage(STREAM_STARTED_MESSAGE_TYPE, message =>
+            this.handleStreamStarted(
+                message as TypedMessage<StreamStartedMessage>
+            )
         );
-        roomService.subscribeMessage(
-            this.STREAM_STOPPED_MESSAGE_TYPE,
-            message => this.handleStreamStopped(message)
+        roomService.subscribeMessage(STREAM_STOPPED_MESSAGE_TYPE, message =>
+            this.handleStreamStopped(
+                message as TypedMessage<StreamStoppedMessage>
+            )
+        );
+        roomService.subscribeMessage(CLIENT_DISCONNECT_MESSAGE_TYPE, message =>
+            this.handleClientDisconnect(
+                message as TypedMessage<ClientDisconnectMessage>
+            )
         );
     }
 
-    public fetchCurrentStreams() {}
+    public fetchCurrentStreams(): string[] {
+        return this.getActiveStreams();
+    }
 
     public sendStreamStartedMessage() {
         const streamStarted: TypedMessage<StreamStartedMessage> = {
-            type: this.STREAM_STARTED_MESSAGE_TYPE,
+            type: STREAM_STARTED_MESSAGE_TYPE,
             msg: {
                 clientID: this.roomService.getLocalClientID(),
             },
@@ -50,28 +72,65 @@ export class StreamsService {
     private handleStreamStarted(
         typedMessage: TypedMessage<StreamStartedMessage>
     ): void {
-        console.log("handled");
+        const clientID = typedMessage.msg.clientID;
 
-        console.log(typedMessage);
-
-        // throw new Error("Function not implemented.");
+        if (!this.activeStreams.has(clientID)) {
+            this.activeStreams.set(clientID, true);
+            this.notifyListeners();
+        }
     }
 
     public sendStreamStoppedMessage() {
-        const streamStopped: TypedMessage<unknown> = {
-            type: this.STREAM_STOPPED_MESSAGE_TYPE,
-            msg: {},
+        const streamStopped: TypedMessage<StreamStoppedMessage> = {
+            type: STREAM_STOPPED_MESSAGE_TYPE,
+            msg: {
+                clientID: this.roomService.getLocalClientID(),
+            },
         };
 
         this.roomService.sendMessage(streamStopped);
     }
 
     private handleStreamStopped(
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        _typedMessage: TypedMessage<unknown>
+        typedMessage: TypedMessage<StreamStoppedMessage>
     ): void {
-        console.log("peer ended a stream");
+        const clientID = typedMessage.msg.clientID;
 
-        // throw new Error("Function not implemented.");
+        this.deleteStreamIfExists(clientID);
+    }
+
+    public subscribe(listener: (streams: string[]) => void): void {
+        this.listeners.push(listener);
+    }
+
+    public unsubscribe(listener: (streams: string[]) => void): void {
+        this.listeners = this.listeners.filter(l => l !== listener);
+    }
+
+    public getActiveStreams(): string[] {
+        return Array.from(this.activeStreams.keys());
+    }
+
+    private notifyListeners() {
+        const streams = this.getActiveStreams();
+        this.listeners.forEach(listener => listener(streams));
+    }
+
+    private handleClientDisconnect(
+        typedMessage: TypedMessage<ClientDisconnectMessage>
+    ): void {
+        const clientID = typedMessage.msg.clientID;
+        console.log("disco: " + clientID);
+
+        this.deleteStreamIfExists(clientID);
+    }
+
+    private deleteStreamIfExists(clientID: string): void {
+        console.log("has " + this.activeStreams.has(clientID));
+
+        if (this.activeStreams.has(clientID)) {
+            this.activeStreams.delete(clientID);
+            this.notifyListeners();
+        }
     }
 }
