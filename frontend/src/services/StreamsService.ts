@@ -77,10 +77,6 @@ export class StreamsService {
         this.notifyListeners();
     }
 
-    public fetchCurrentStreams(): string[] {
-        return this.getActiveStreams();
-    }
-
     public sendStreamStartedMessage() {
         const streamStarted: TypedMessage<StreamStartedMessage> = {
             type: STREAM_STARTED_MESSAGE_TYPE,
