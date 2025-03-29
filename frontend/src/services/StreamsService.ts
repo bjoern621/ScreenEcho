@@ -15,6 +15,12 @@ type StreamStoppedMessage = StreamMessage;
 const STREAM_STARTED_MESSAGE_TYPE: string = "stream-started";
 const STREAM_STOPPED_MESSAGE_TYPE: string = "stream-stopped";
 
+const STREAMS_AVAILABLE_MESSAGE_TYPE: string = "streams-available";
+
+type StreamsAvailableMessage = {
+    clientIDs: string[];
+};
+
 /**
  * The `StreamsService` class is responsible for managing stream-related operations
  * within a room. It handles subscribing to and sending stream
@@ -33,8 +39,6 @@ export class StreamsService {
      * Initializes the StreamsService by subscribing to stream-related messages.
      */
     public constructor(roomService: RoomService) {
-        console.log("StreamsService constructor called");
-
         this.roomService = roomService;
 
         roomService.subscribeMessage(STREAM_STARTED_MESSAGE_TYPE, message =>
@@ -52,6 +56,25 @@ export class StreamsService {
                 message as TypedMessage<ClientDisconnectMessage>
             )
         );
+        roomService.subscribeMessage(STREAMS_AVAILABLE_MESSAGE_TYPE, message =>
+            this.handleStreamsAvailable(
+                message as TypedMessage<StreamsAvailableMessage>
+            )
+        );
+    }
+
+    /**
+     * Clears the current active streams and sets the new active streams based on the provided message.
+     */
+    private handleStreamsAvailable(
+        message: TypedMessage<StreamsAvailableMessage>
+    ): void {
+        this.activeStreams.clear();
+
+        for (const clientID of message.msg.clientIDs) {
+            this.activeStreams.set(clientID, true);
+        }
+        this.notifyListeners();
     }
 
     public fetchCurrentStreams(): string[] {
@@ -111,6 +134,9 @@ export class StreamsService {
         return Array.from(this.activeStreams.keys());
     }
 
+    /**
+     * Notifies all registered listeners with the current list of active streams.
+     */
     private notifyListeners() {
         const streams = this.getActiveStreams();
         this.listeners.forEach(listener => listener(streams));
@@ -120,14 +146,11 @@ export class StreamsService {
         typedMessage: TypedMessage<ClientDisconnectMessage>
     ): void {
         const clientID = typedMessage.msg.clientID;
-        console.log("disco: " + clientID);
 
         this.deleteStreamIfExists(clientID);
     }
 
     private deleteStreamIfExists(clientID: string): void {
-        console.log("has " + this.activeStreams.has(clientID));
-
         if (this.activeStreams.has(clientID)) {
             this.activeStreams.delete(clientID);
             this.notifyListeners();

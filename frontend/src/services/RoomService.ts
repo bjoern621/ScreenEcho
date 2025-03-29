@@ -47,8 +47,6 @@ export class RoomService {
      * Additionally, it connects to the specified room and waits for the local client ID.
      */
     public constructor(roomID: string) {
-        console.log("RoomService constructor called");
-
         this.connectToRoom(roomID);
 
         this.waitForLocalClientID();
