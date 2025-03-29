@@ -14,7 +14,13 @@ export default function StreamView(props: StreamViewProps) {
 
     return (
         <div className={css.container}>
-            <video autoPlay ref={videoElem} className={css.video}></video>
+            {props.videoSrc ? (
+                <video autoPlay ref={videoElem} className={css.video}></video>
+            ) : (
+                <div className={css.loadingContainer}>
+                    <span>Loading video stream...</span>
+                </div>
+            )}
         </div>
     );
 }
