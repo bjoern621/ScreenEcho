@@ -9,14 +9,15 @@ import (
 	"sync"
 
 	"bjoernblessin.de/screenecho/clients"
-	"bjoernblessin.de/screenecho/connection"
 	"bjoernblessin.de/screenecho/util/assert"
 )
 
 type RoomManager struct {
-	rooms         map[RoomID]*Room // Mapping RoomID <-> Room is redundant here because it's already done in Room struct, but most efficient
-	roomsMutex    sync.RWMutex
-	clientManager *clients.ClientManager
+	rooms              map[RoomID]*Room // Mapping RoomID <-> Room is redundant here because it's already done in Room struct, but most efficient
+	roomsMutex         sync.RWMutex
+	clientManager      *clients.ClientManager
+	clientJoinHandlers []func(*Room, *clients.Client)
+	clientJoinMutex    sync.RWMutex
 }
 
 func NewRoomManager(clientManager *clients.ClientManager) *RoomManager {
@@ -83,6 +84,8 @@ func (rm *RoomManager) HandleConnect(writer http.ResponseWriter, request *http.R
 
 	room.addClient(client.ID)
 
+	rm.notifyClientJoinHandlers(room, client)
+
 	client.RegisterDisconnectHandler(func() {
 		room.removeClient(client.ID)
 		if room.isEmpty() {
@@ -101,19 +104,20 @@ func (rm *RoomManager) deleteRoom(room *Room) {
 	delete(rm.rooms, room.RoomID)
 }
 
-const CLIENT_DISCONNECT_MESSAGE_TYPE = "client-disconnect"
+// RegisterClientJoinHandler registers a handler function that is called when a client's connection is establisheds.
+// There is no RemoveConnectHandler function, so once a handler is registered, it cannot be removed.
+func (rm *RoomManager) RegisterClientJoinHandler(handler func(*Room, *clients.Client)) {
+	rm.clientJoinMutex.Lock()
+	defer rm.clientJoinMutex.Unlock()
 
-type clientDisconnectMessage struct {
-	ClientID string `json:"clientID"`
+	rm.clientJoinHandlers = append(rm.clientJoinHandlers, handler)
 }
 
-func (room *Room) sendDisconnectMessageToRemainingClients(clientID clients.ClientID) {
-	msg := connection.TypedMessage[clientDisconnectMessage]{
-		Type: CLIENT_DISCONNECT_MESSAGE_TYPE,
-		Msg: clientDisconnectMessage{
-			ClientID: clientID.String(),
-		},
-	}
+func (rm *RoomManager) notifyClientJoinHandlers(room *Room, client *clients.Client) {
+	rm.clientJoinMutex.RLock()
+	defer rm.clientJoinMutex.RUnlock()
 
-	Broadcast(room, msg, clientID)
+	for _, joinHandler := range rm.clientJoinHandlers {
+		joinHandler(room, client)
+	}
 }

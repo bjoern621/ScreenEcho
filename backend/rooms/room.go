@@ -19,6 +19,12 @@ type Room struct {
 	clientManager  *clients.ClientManager
 }
 
+const CLIENT_DISCONNECT_MESSAGE_TYPE = "client-disconnect"
+
+type clientDisconnectMessage struct {
+	ClientID string `json:"clientID"`
+}
+
 func NewRoom(roomID RoomID, clientManager *clients.ClientManager) *Room {
 	return &Room{
 		RoomID:        roomID,
@@ -73,4 +79,15 @@ func (room *Room) isEmpty() bool {
 	defer room.clientIDsMutex.RUnlock()
 
 	return len(room.clientIDs) == 0
+}
+
+func (room *Room) sendDisconnectMessageToRemainingClients(clientID clients.ClientID) {
+	msg := connection.TypedMessage[clientDisconnectMessage]{
+		Type: CLIENT_DISCONNECT_MESSAGE_TYPE,
+		Msg: clientDisconnectMessage{
+			ClientID: clientID.String(),
+		},
+	}
+
+	Broadcast(room, msg, clientID)
 }

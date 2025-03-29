@@ -30,6 +30,12 @@ type StreamManager struct {
 	roomManager        *rooms.RoomManager
 }
 
+const AVAILABLE_STREAMS_MESSAGE_TYPE = "streams-available"
+
+type AvailableStreamsMessage struct {
+	ClientIDs []string `json:"clientIDs"`
+}
+
 func NewStreamManager(clientManager *clients.ClientManager, roomManager *rooms.RoomManager) *StreamManager {
 	sm := &StreamManager{
 		activeStreams:  make(map[rooms.RoomID][]*StreamInfo),
@@ -39,8 +45,26 @@ func NewStreamManager(clientManager *clients.ClientManager, roomManager *rooms.R
 
 	clientManager.SubscribeMessage("stream-started", sm.handleStreamStarted)
 	clientManager.SubscribeMessage("stream-stopped", sm.handleStreamStopped)
+	roomManager.RegisterClientJoinHandler(sm.handleClientJoined)
 
 	return sm
+}
+
+func (sm *StreamManager) handleClientJoined(room *rooms.Room, client *clients.Client) {
+	streamingClientIDs := make([]string, 0, len(sm.activeStreams[room.RoomID]))
+
+	for _, streamInfo := range sm.activeStreams[room.RoomID] {
+		streamingClientIDs = append(streamingClientIDs, streamInfo.clientID.String())
+	}
+
+	streamsAvailableMsg := connection.TypedMessage[AvailableStreamsMessage]{
+		Type: AVAILABLE_STREAMS_MESSAGE_TYPE,
+		Msg: AvailableStreamsMessage{
+			ClientIDs: streamingClientIDs,
+		},
+	}
+
+	clients.SendMessage(client, streamsAvailableMsg)
 }
 
 func (sm *StreamManager) handleStreamStarted(client *clients.Client, typedMessage connection.TypedMessage[json.RawMessage]) {
