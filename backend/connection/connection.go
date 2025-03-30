@@ -6,7 +6,6 @@ package connection
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"slices"
 	"sync"
@@ -108,7 +107,7 @@ func (cm *ConnectionManager) listenToMessages(conn *Conn) {
 			return
 		}
 
-		log.Printf("msg recieved: %s", msg)
+		// log.Printf("msg received: %s", msg)
 
 		var typedMessage TypedMessage[json.RawMessage]
 		err = strictjson.Unmarshal(msg, &typedMessage)
@@ -220,7 +219,7 @@ func (cm *ConnectionManager) forwardMessage(conn *Conn, typedMessage TypedMessag
 //	    log.Println("Message sent successfully")
 //	}
 func SendMessage[T any](conn *Conn, msg TypedMessage[T]) error {
-	log.Printf("msg sent: %v", msg)
+	// log.Printf("msg sent: %v", msg)
 
 	err := conn.socket.WriteJSON(msg)
 	return err

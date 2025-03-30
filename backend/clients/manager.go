@@ -5,6 +5,7 @@ package clients
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"sync"
 
@@ -45,6 +46,8 @@ func (cm *ClientManager) NewClient(writer http.ResponseWriter, request *http.Req
 
 	client.sendClientID()
 
+	log.Printf("Client %s connected", clientID)
+
 	conn.AddCloseHandler(func() {
 		cm.removeClient(clientID)
 	})
@@ -55,6 +58,8 @@ func (cm *ClientManager) NewClient(writer http.ResponseWriter, request *http.Req
 func (cm *ClientManager) removeClient(clientID ClientID) {
 	cm.clientsMutex.Lock()
 	defer cm.clientsMutex.Unlock()
+
+	log.Printf("Client %s removed from global", clientID)
 
 	delete(cm.clients, clientID)
 }
@@ -76,6 +81,9 @@ func (cm *ClientManager) GetClientByWebSocket(conn *connection.Conn) *Client {
 // GetClientByID does exactly that.
 // The returned Client may be nil if the client with ID doesn't exist.
 func (cm *ClientManager) GetClientByID(id ClientID) *Client {
+	cm.clientsMutex.RLock()
+	defer cm.clientsMutex.RUnlock()
+
 	return cm.clients[id]
 }
 

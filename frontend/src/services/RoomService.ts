@@ -57,6 +57,11 @@ export class RoomService {
             "ws://localhost:8080/room/" + roomID + "/connect"
         );
 
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const temp = new WebSocket(
+            "ws://localhost:8080/room/" + roomID + "/connect"
+        );
+
         this.roomSocket.onmessage = event => {
             console.log("response form server: " + event.data);
 
