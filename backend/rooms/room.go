@@ -62,14 +62,14 @@ func Broadcast[T any](room *Room, msg connection.TypedMessage[T], senderClientID
 	// log.Println("broadcast try")
 	room.clientIDsMutex.Lock()
 	defer room.clientIDsMutex.Unlock()
-	log.Println("broadcast passed")
+	// log.Println("broadcast passed")
 
 	for clientID := range room.clientIDs {
 		if clientID == senderClientID {
 			continue
 		}
 
-		log.Printf("receiver client %s", clientID)
+		// log.Printf("receiver client %s", clientID)
 
 		receiver := room.clientManager.GetClientByID(clientID)
 		// if receiver == nil {
@@ -85,7 +85,7 @@ func (room *Room) isEmpty() bool {
 	// log.Println("try isEmpty")
 	room.clientIDsMutex.RLock()
 	defer room.clientIDsMutex.RUnlock()
-	log.Println("isEmpty passed")
+	// log.Println("isEmpty passed")
 
 	return len(room.clientIDs) == 0
 }

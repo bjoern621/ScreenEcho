@@ -6,6 +6,7 @@ package connection
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"slices"
 	"sync"
@@ -46,6 +47,7 @@ type MessageHandler func(*Conn, TypedMessage[json.RawMessage])
 type ConnectionManager struct {
 	messageHandlers      map[MessageType][]messageHandlerWrapper
 	messageHandlersMutex sync.RWMutex
+	closeMutex           sync.Mutex
 }
 
 func NewConnectionManager() *ConnectionManager {
@@ -99,10 +101,25 @@ func (cm *ConnectionManager) listenToMessages(conn *Conn) {
 		_, msg, err := conn.socket.ReadMessage()
 		if err != nil {
 			// WebSocket is closed
+			cm.closeMutex.Lock()
+			defer cm.closeMutex.Unlock()
+
+			conn.closeHandlersMutex.RLock()
+			defer conn.closeHandlersMutex.RUnlock()
+
+			var waitgroup sync.WaitGroup
+
 			for _, closeHandler := range conn.closeHandlers {
-				// log.Printf("sending close message to one handler")
-				closeHandler()
+				waitgroup.Add(1)
+				go func() {
+					defer waitgroup.Done()
+					closeHandler()
+				}()
 			}
+
+			waitgroup.Wait()
+
+			log.Printf("all close handlers finished")
 
 			return
 		}
