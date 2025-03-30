@@ -1,7 +1,6 @@
 package rooms
 
 import (
-	"log"
 	"sync"
 
 	"bjoernblessin.de/screenecho/clients"
@@ -37,8 +36,6 @@ func (room *Room) addClient(clientID clients.ClientID) {
 	room.clientIDsMutex.Lock()
 	defer room.clientIDsMutex.Unlock()
 
-	log.Println("client joined room")
-
 	assert.Assert(room.clientIDs[clientID] == false, "couldn't add client because client already joined the room")
 
 	room.clientIDs[clientID] = true
@@ -50,8 +47,6 @@ func (room *Room) removeClient(clientID clients.ClientID) {
 	room.clientIDsMutex.Lock()
 	defer room.clientIDsMutex.Unlock()
 
-	log.Printf("client %s removed from room", clientID)
-
 	delete(room.clientIDs, clientID)
 }
 
@@ -59,22 +54,15 @@ func (room *Room) removeClient(clientID clients.ClientID) {
 // The sender can be nil, effectively broadcasting to all clients.
 // See also [connection.SendMessage].
 func Broadcast[T any](room *Room, msg connection.TypedMessage[T], senderClientID clients.ClientID) {
-	// log.Println("broadcast try")
 	room.clientIDsMutex.Lock()
 	defer room.clientIDsMutex.Unlock()
-	// log.Println("broadcast passed")
 
 	for clientID := range room.clientIDs {
 		if clientID == senderClientID {
 			continue
 		}
 
-		// log.Printf("receiver client %s", clientID)
-
 		receiver := room.clientManager.GetClientByID(clientID)
-		// if receiver == nil {
-		// 	continue
-		// }
 		assert.IsNotNil(receiver)
 
 		clients.SendMessage(receiver, msg)
@@ -82,10 +70,8 @@ func Broadcast[T any](room *Room, msg connection.TypedMessage[T], senderClientID
 }
 
 func (room *Room) isEmpty() bool {
-	// log.Println("try isEmpty")
 	room.clientIDsMutex.RLock()
 	defer room.clientIDsMutex.RUnlock()
-	// log.Println("isEmpty passed")
 
 	return len(room.clientIDs) == 0
 }

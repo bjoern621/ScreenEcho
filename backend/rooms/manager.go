@@ -5,10 +5,8 @@
 package rooms
 
 import (
-	"log"
 	"net/http"
 	"sync"
-	"time"
 
 	"bjoernblessin.de/screenecho/clients"
 	"bjoernblessin.de/screenecho/util/assert"
@@ -89,20 +87,12 @@ func (rm *RoomManager) HandleConnect(writer http.ResponseWriter, request *http.R
 	rm.notifyClientJoinHandlers(room, client)
 
 	client.RegisterDisconnectHandler(func() {
-		//waitgroup ?
-		time.Sleep(3 * time.Second)
-		// log.Printf("Client disconnected %v", client.ID)
 		room.removeClient(client.ID)
-		// room.clientIDsMutex.Lock()
-		log.Printf("Client handling disconnect %v", client.ID)
 		if room.isEmpty() {
-			// log.Printf("Room %s is empty, deleting it", room.RoomID)
 			rm.deleteRoom(room)
 		} else {
-			// log.Printf("Room %s is not empty, sending disconnect message to remaining clients", room.RoomID)
 			room.sendDisconnectMessageToRemainingClients(client.ID)
 		}
-		// room.clientIDsMutex.Unlock()
 	})
 }
 
@@ -113,8 +103,6 @@ func (rm *RoomManager) deleteRoom(room *Room) {
 	defer rm.roomsMutex.Unlock()
 
 	assert.Assert(rm.rooms[room.RoomID] != nil, "room must exist in the list of managed rooms")
-
-	log.Printf("Deleting room %s", room.RoomID)
 
 	delete(rm.rooms, room.RoomID)
 }

@@ -47,7 +47,8 @@ type MessageHandler func(*Conn, TypedMessage[json.RawMessage])
 type ConnectionManager struct {
 	messageHandlers      map[MessageType][]messageHandlerWrapper
 	messageHandlersMutex sync.RWMutex
-	closeMutex           sync.Mutex
+	// closeMutex is a mutex used to ensure only one connection close-routine is executed at a time.
+	closeMutex sync.Mutex
 }
 
 func NewConnectionManager() *ConnectionManager {
@@ -119,12 +120,10 @@ func (cm *ConnectionManager) listenToMessages(conn *Conn) {
 
 			waitgroup.Wait()
 
-			log.Printf("all close handlers finished")
-
 			return
 		}
 
-		// log.Printf("msg received: %s", msg)
+		log.Printf("msg received: %s", msg)
 
 		var typedMessage TypedMessage[json.RawMessage]
 		err = strictjson.Unmarshal(msg, &typedMessage)
@@ -236,7 +235,7 @@ func (cm *ConnectionManager) forwardMessage(conn *Conn, typedMessage TypedMessag
 //	    log.Println("Message sent successfully")
 //	}
 func SendMessage[T any](conn *Conn, msg TypedMessage[T]) error {
-	// log.Printf("msg sent: %v", msg)
+	log.Printf("msg sent: %v", msg)
 
 	err := conn.socket.WriteJSON(msg)
 	return err
