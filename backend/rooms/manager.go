@@ -96,10 +96,13 @@ func (rm *RoomManager) HandleConnect(writer http.ResponseWriter, request *http.R
 	})
 }
 
-// deleteRoom removes room from the list of managed rooms if it exists.
+// deleteRoom removes room from the list of managed rooms.
+// room must exist in the list of managed rooms.
 func (rm *RoomManager) deleteRoom(room *Room) {
 	rm.roomsMutex.Lock()
 	defer rm.roomsMutex.Unlock()
+
+	assert.Assert(rm.rooms[room.RoomID] != nil, "room must exist in the list of managed rooms")
 
 	delete(rm.rooms, room.RoomID)
 }

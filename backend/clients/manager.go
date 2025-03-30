@@ -76,6 +76,9 @@ func (cm *ClientManager) GetClientByWebSocket(conn *connection.Conn) *Client {
 // GetClientByID does exactly that.
 // The returned Client may be nil if the client with ID doesn't exist.
 func (cm *ClientManager) GetClientByID(id ClientID) *Client {
+	cm.clientsMutex.RLock()
+	defer cm.clientsMutex.RUnlock()
+
 	return cm.clients[id]
 }
 

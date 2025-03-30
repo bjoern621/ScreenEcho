@@ -1,7 +1,6 @@
 package rooms
 
 import (
-	"log"
 	"sync"
 
 	"bjoernblessin.de/screenecho/clients"
@@ -34,8 +33,6 @@ func NewRoom(roomID RoomID, clientManager *clients.ClientManager) *Room {
 }
 
 func (room *Room) addClient(clientID clients.ClientID) {
-	log.Println("add")
-
 	room.clientIDsMutex.Lock()
 	defer room.clientIDsMutex.Unlock()
 
@@ -47,8 +44,6 @@ func (room *Room) addClient(clientID clients.ClientID) {
 // removeClient removes the client with clientID from the room.
 // If the client is not part of the room, the method has no effect.
 func (room *Room) removeClient(clientID clients.ClientID) {
-	log.Println("remove")
-
 	room.clientIDsMutex.Lock()
 	defer room.clientIDsMutex.Unlock()
 
