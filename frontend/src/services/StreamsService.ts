@@ -1,12 +1,13 @@
 import {
     CLIENT_DISCONNECT_MESSAGE_TYPE,
     ClientDisconnectMessage,
+    ClientID,
     RoomService,
     TypedMessage,
 } from "./RoomService";
 
 type StreamMessage = {
-    clientID: string;
+    clientID: ClientID;
 };
 
 type StreamStartedMessage = StreamMessage;
@@ -18,7 +19,7 @@ const STREAM_STOPPED_MESSAGE_TYPE: string = "stream-stopped";
 const STREAMS_AVAILABLE_MESSAGE_TYPE: string = "streams-available";
 
 type StreamsAvailableMessage = {
-    clientIDs: string[];
+    clientIDs: ClientID[];
 };
 
 /**
@@ -32,8 +33,8 @@ export class StreamsService {
     /**
      * A map that holds the currently active streams in the connected room.
      */
-    private readonly activeStreams: Map<string, boolean> = new Map();
-    private listeners: ((streams: string[]) => void)[] = [];
+    private readonly activeStreams: Map<ClientID, boolean> = new Map();
+    private listeners: ((streams: ClientID[]) => void)[] = [];
 
     /**
      * Initializes the StreamsService by subscribing to stream-related messages.
@@ -118,15 +119,15 @@ export class StreamsService {
         this.deleteStreamIfExists(clientID);
     }
 
-    public subscribe(listener: (streams: string[]) => void): void {
+    public subscribe(listener: (streams: ClientID[]) => void): void {
         this.listeners.push(listener);
     }
 
-    public unsubscribe(listener: (streams: string[]) => void): void {
+    public unsubscribe(listener: (streams: ClientID[]) => void): void {
         this.listeners = this.listeners.filter(l => l !== listener);
     }
 
-    public getActiveStreams(): string[] {
+    public getActiveStreams(): ClientID[] {
         return Array.from(this.activeStreams.keys());
     }
 
@@ -146,7 +147,7 @@ export class StreamsService {
         this.deleteStreamIfExists(clientID);
     }
 
-    private deleteStreamIfExists(clientID: string): void {
+    private deleteStreamIfExists(clientID: ClientID): void {
         if (this.activeStreams.has(clientID)) {
             this.activeStreams.delete(clientID);
             this.notifyListeners();

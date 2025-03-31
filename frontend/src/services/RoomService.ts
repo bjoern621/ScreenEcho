@@ -16,16 +16,18 @@ export type ErrorMessage = {
 };
 
 type ClientIDMessage = {
-    clientID: string;
+    clientID: ClientID;
 };
 
 export const CLIENT_DISCONNECT_MESSAGE_TYPE: MessageType = "client-disconnect";
 
 export type ClientDisconnectMessage = {
-    clientID: string;
+    clientID: ClientID;
 };
 
 export type ClientID = string;
+
+type RoomID = string;
 
 const CLIENT_ID_MESSAGE_TYPE: string = "client-id";
 
@@ -42,19 +44,19 @@ export class RoomService {
     private readonly messageHandlers: Map<MessageType, MessageHandler[]> =
         new Map();
 
-    private localClientID: string | undefined;
+    private localClientID: ClientID | undefined;
 
     /**
      * Initializes a new instance of the RoomService class.
      * Additionally, it connects to the specified room and waits for the local client ID.
      */
-    public constructor(roomID: string) {
+    public constructor(roomID: RoomID) {
         this.connectToRoom(roomID);
 
         this.waitForLocalClientID();
     }
 
-    private connectToRoom(roomID: string) {
+    private connectToRoom(roomID: RoomID) {
         this.roomSocket = new WebSocket(
             "ws://localhost:8080/room/" + roomID + "/connect"
         );
@@ -177,7 +179,7 @@ export class RoomService {
         handlers.splice(index, 1);
     }
 
-    public getLocalClientID(): string {
+    public getLocalClientID(): ClientID {
         Assert.assert(this.localClientID);
 
         return this.localClientID;
