@@ -2,18 +2,15 @@ import { useParams } from "react-router";
 import StreamView from "../StreamView/StreamView";
 import css from "./Room.module.scss";
 import ControlMenu from "../ControlMenu/ControlMenu";
-import { useRef, useState } from "react";
+import { useRef } from "react";
 import * as Assert from "../../util/Assert";
 import InactiveStreams from "../InactiveStreams/InactiveStreams";
 import { RoomService } from "../../services/RoomService";
 import { StreamsService } from "../../services/StreamsService";
-import { useStreams } from "../../hooks/useStreams";
+import { LOCAL_STREAM_ID, useStreams } from "../../hooks/useStreams";
 
 export default function Room() {
     const { roomID } = useParams();
-    const [localStreamActive, setLocalStreamActive] = useState<boolean>(false);
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const [streamSrcObject, setSrcObject] = useState<MediaStream | null>(null);
 
     const roomServiceRef = useRef<RoomService | undefined>(undefined);
     if (!roomServiceRef.current) {
@@ -30,12 +27,12 @@ export default function Room() {
         streamsServiceRef.current = new StreamsService(roomServiceRef.current);
     }
 
-    const { streams } = useStreams(streamsServiceRef.current);
+    const { streams, setLocalStream } = useStreams(streamsServiceRef.current);
 
     return (
         <div className={css.container}>
             Room: {roomID}
-            {streams.length == 0 ? (
+            {streams.size == 0 ? (
                 <div className={css.noActiveStreams}>
                     <img
                         src="/src/assets/sad.png"
@@ -49,7 +46,7 @@ export default function Room() {
                 <>
                     <div className={css.activeStreamsContainer}>
                         <div className={css.activeStreams}>
-                            {streams.map(stream =>
+                            {Array.from(streams.values()).map(stream =>
                                 stream.isBeingWatched ? (
                                     <StreamView
                                         key={stream.clientID}
@@ -63,14 +60,12 @@ export default function Room() {
                 </>
             )}
             <ControlMenu
-                isStreaming={localStreamActive}
+                isStreaming={streams.has(LOCAL_STREAM_ID)}
                 onStartStream={(captureStream: MediaStream) => {
-                    setLocalStreamActive(true);
-                    setSrcObject(captureStream);
+                    setLocalStream(captureStream);
                 }}
                 onEndStream={() => {
-                    setLocalStreamActive(false);
-                    setSrcObject(null);
+                    setLocalStream(undefined);
                 }}
                 streamsService={streamsServiceRef.current}
             ></ControlMenu>

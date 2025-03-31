@@ -1,8 +1,9 @@
-import { Stream } from "../Room/Room";
+import { Stream } from "../../hooks/useStreams";
+import { ClientID } from "../../services/RoomService";
 import css from "./InactiveStreams.module.scss";
 
 interface InactiveStreamsProps {
-    streams: Stream[];
+    streams: Map<ClientID, Stream>;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars

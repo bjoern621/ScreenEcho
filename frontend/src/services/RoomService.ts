@@ -25,6 +25,8 @@ export type ClientDisconnectMessage = {
     clientID: string;
 };
 
+export type ClientID = string;
+
 const CLIENT_ID_MESSAGE_TYPE: string = "client-id";
 
 /**
