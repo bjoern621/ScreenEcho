@@ -1,6 +1,5 @@
 import { useEffect, useRef } from "react";
 import css from "./StreamView.module.scss";
-import { assert } from "../../util/Assert";
 
 interface StreamViewProps {
     videoSrc: MediaProvider | undefined;
@@ -10,7 +9,8 @@ export default function StreamView(props: StreamViewProps) {
     const videoElem = useRef<HTMLVideoElement>(null);
 
     useEffect(() => {
-        assert(videoElem.current);
+        if (!videoElem.current) return;
+
         videoElem.current.srcObject = props.videoSrc ?? null;
     }, [props.videoSrc]);
 
