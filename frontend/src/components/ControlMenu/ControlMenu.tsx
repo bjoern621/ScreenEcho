@@ -1,14 +1,12 @@
 import { useRef } from "react";
 import css from "./ControlMenu.module.css";
 import errorAsValue from "../../util/ErrorAsValue";
-import { StreamsService } from "../../services/StreamsService";
 
 type ControlMenuProps = {
     /** Toggles whether the start or stop streaming button is displayed. */
     isStreaming: boolean;
     onStartStream: (captureStream: MediaStream) => void;
     onEndStream: () => void;
-    streamsService: StreamsService;
 };
 
 const streamOptions: DisplayMediaStreamOptions = {
@@ -45,13 +43,7 @@ export default function ControlMenu(props: ControlMenuProps) {
             track.onended = () => stopCapture();
         });
 
-        // const service = new WebRTCService.WebRTCService();
-        // service.makeCall();
-        // service.listenToJoiningUsers();
-
         props.onStartStream(captureStream);
-
-        props.streamsService.sendStreamStartedMessage();
     }
 
     function stopCapture(): void {
@@ -61,8 +53,6 @@ export default function ControlMenu(props: ControlMenuProps) {
         tracks.current = [];
 
         props.onEndStream();
-
-        props.streamsService.sendStreamStoppedMessage();
     }
 
     return (

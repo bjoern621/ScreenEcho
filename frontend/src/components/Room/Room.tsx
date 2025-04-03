@@ -25,6 +25,9 @@ export default function Room() {
     const streamsServiceRef = useRef<StreamsService | undefined>(undefined);
     if (!streamsServiceRef.current) {
         streamsServiceRef.current = new StreamsService(roomServiceRef.current);
+
+        // const webrtc = new WebRTCService(streamsServiceRef.current);
+        // webrtc.startCall(
     }
 
     const { streams, setLocalStream } = useStreams(streamsServiceRef.current);
@@ -63,11 +66,16 @@ export default function Room() {
                 isStreaming={streams.has(LOCAL_STREAM_ID)}
                 onStartStream={(captureStream: MediaStream) => {
                     setLocalStream(captureStream);
+
+                    Assert.assert(streamsServiceRef.current);
+                    streamsServiceRef.current.sendStreamStartedMessage();
                 }}
                 onEndStream={() => {
                     setLocalStream(undefined);
+
+                    Assert.assert(streamsServiceRef.current);
+                    streamsServiceRef.current.sendStreamStoppedMessage();
                 }}
-                streamsService={streamsServiceRef.current}
             ></ControlMenu>
         </div>
     );

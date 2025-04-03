@@ -14,30 +14,12 @@ export type Stream = {
 
 export const LOCAL_STREAM_ID = "localStream";
 
+/**
+ * Hook to manage and update the state of available streams.
+ */
 export const useStreams = (streamsService: StreamsService) => {
+    // Containts the currently active streams in the room.
     const [streams, setStreams] = useState<Map<ClientID, Stream>>(new Map());
-
-    /**
-     * Updates the local media stream in the streams state.
-     * stream can be set as the local stream, or `undefined` to clear it.
-     */
-    const setLocalStream = (mediaStream: MediaStream | undefined) => {
-        setStreams(prevStreams => {
-            const updatedStreams = new Map(prevStreams);
-
-            if (!mediaStream) {
-                updatedStreams.delete(LOCAL_STREAM_ID);
-            } else {
-                updatedStreams.set(LOCAL_STREAM_ID, {
-                    clientID: LOCAL_STREAM_ID,
-                    isBeingWatched: true,
-                    srcObject: mediaStream,
-                });
-            }
-
-            return updatedStreams;
-        });
-    };
 
     useEffect(() => {
         /**
@@ -89,5 +71,26 @@ export const useStreams = (streamsService: StreamsService) => {
         };
     }, [streamsService]);
 
+    /**
+     * Updates the local media stream in the streams state.
+     * stream can be set as the local stream, or `undefined` to clear it.
+     */
+    const setLocalStream = (mediaStream: MediaStream | undefined) => {
+        setStreams(prevStreams => {
+            const updatedStreams = new Map(prevStreams);
+
+            if (!mediaStream) {
+                updatedStreams.delete(LOCAL_STREAM_ID);
+            } else {
+                updatedStreams.set(LOCAL_STREAM_ID, {
+                    clientID: LOCAL_STREAM_ID,
+                    isBeingWatched: true,
+                    srcObject: mediaStream,
+                });
+            }
+
+            return updatedStreams;
+        });
+    };
     return { streams, setLocalStream };
 };
