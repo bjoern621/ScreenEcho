@@ -62,6 +62,7 @@ body {
 
         --border: #e4e4e7;
         --shadow-rgb: 39, 39, 42;
+        --shadow: rgba(var(--shadow-rgb), 0.1);
     }
 
     &.dark {
@@ -94,6 +95,7 @@ body {
 
         --border: #27272a;
         --shadow-rgb: 228, 228, 231;
+        --shadow: rgba(var(--shadow-rgb), 0.1);
     }
 
     background-color: var(--background);
