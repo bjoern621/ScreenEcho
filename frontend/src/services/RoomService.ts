@@ -92,8 +92,6 @@ export class RoomService {
         const handleClientIDMessage = (
             message: TypedMessage<ClientIDMessage>
         ) => {
-            console.log("received client id: " + message.msg.clientID);
-
             this.localClientID = message.msg.clientID;
 
             this.unsubscribeMessage(
