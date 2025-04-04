@@ -110,6 +110,10 @@ body {
     height: 100%;
 }
 
+:modal {
+    all: unset;
+}
+
 a,
 button {
     all: unset;

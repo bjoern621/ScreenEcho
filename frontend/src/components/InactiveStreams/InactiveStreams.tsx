@@ -1,8 +1,9 @@
-import { createPortal } from "react-dom";
 import { Stream } from "../../hooks/useStreams";
 import { ClientID } from "../../services/RoomService";
+import { assert } from "../../util/Assert";
+import HiddenStream from "./HiddenStream/HiddenStream";
 import css from "./InactiveStreams.module.scss";
-import { useState } from "react";
+import { useRef } from "react";
 
 type InactiveStreamsProps = {
     streams: Map<ClientID, Stream>;
@@ -10,7 +11,7 @@ type InactiveStreamsProps = {
 };
 
 export default function InactiveStreams(props: InactiveStreamsProps) {
-    const [showInactiveStreams, setShowInactiveStreams] = useState(false);
+    const modal = useRef<HTMLDialogElement>(null);
 
     const hiddenStreamsCount = Array.from(props.streams.values()).filter(
         stream => !stream.isBeingWatched
@@ -20,36 +21,39 @@ export default function InactiveStreams(props: InactiveStreamsProps) {
         <>
             <button
                 className={css.button}
-                onClick={() => setShowInactiveStreams(true)}
+                onClick={() => {
+                    assert(modal.current);
+                    modal.current.showModal();
+                }}
             >
                 Zeige ausgeblendete Streams ({hiddenStreamsCount})
             </button>
-            {createPortal(
-                showInactiveStreams && (
+            <dialog className={css.dialog} ref={modal}>
+                <div className={css.dialogContent}>
+                    <button
+                        className={css.button}
+                        onClick={() => {
+                            assert(modal.current);
+                            modal.current.close();
+                        }}
+                    >
+                        Zurück
+                    </button>
                     <div className={css.inactiveStreamsContainer}>
-                        <button
-                            className={css.button}
-                            onClick={() => setShowInactiveStreams(false)}
-                        >
-                            Zurück
-                        </button>
-                        <div></div>
                         {Array.from(props.streams.values()).map(stream =>
                             stream.isBeingWatched ? null : (
-                                <span
+                                <HiddenStream
                                     key={stream.clientID}
-                                    onClick={() =>
-                                        props.setBeingWatched(stream.clientID)
-                                    }
-                                >
-                                    stream.clientID
-                                </span>
+                                    streamId={stream.clientID}
+                                    onRestore={() => {
+                                        props.setBeingWatched(stream.clientID);
+                                    }}
+                                ></HiddenStream>
                             )
                         )}
                     </div>
-                ),
-                document.body
-            )}
+                </div>
+            </dialog>
         </>
     );
 }

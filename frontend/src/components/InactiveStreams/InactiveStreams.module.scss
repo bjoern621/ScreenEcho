@@ -19,13 +19,30 @@
     transition-timing-function: ease-in;
 }
 
-.inactive-streams-container {
+.dialog {
     position: absolute;
     bottom: 0;
     left: 0;
 
     width: 100%;
-    height: 20%;
 
     background-color: rgba(207, 31, 31, 0.753);
+}
+
+.dialog-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    gap: 15px;
+    padding: 15px;
+}
+
+.inactive-streams-container {
+    flex: 1;
+
+    display: flex;
+    flex-direction: row;
+
+    gap: 15px;
 }
