@@ -41,8 +41,11 @@ export default function StreamView(props: StreamViewProps) {
                     >
                         1080p@50fps
                     </div>
-                    <button className={`${css.hideStreamButton} `}>
+                    <button
+                        className={`${css.hideStreamButton} tooltip-on-hover`}
+                    >
                         <img src={hideIcon} alt="" />
+                        <span className="tooltip top">Stream ausblenden</span>
                     </button>
                 </div>
             </div>
