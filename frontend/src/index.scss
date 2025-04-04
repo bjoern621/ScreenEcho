@@ -119,6 +119,11 @@ button {
 
 button {
     user-select: none;
+
+    &:focus-visible {
+        outline: 4px solid var(--light-blue);
+        outline-offset: 1px;
+    }
 }
 
 a {
@@ -158,11 +163,6 @@ img {
         transform: translate(2px, 2px);
         box-shadow: 3px 3px var(--outline-color);
         background-color: var(--pressed-color);
-    }
-
-    &:focus-visible {
-        outline: 4px solid var(--light-blue);
-        outline-offset: 1px;
     }
 
     transition-property: transform, box-shadow, background-color;

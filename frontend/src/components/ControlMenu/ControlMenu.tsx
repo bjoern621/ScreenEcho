@@ -1,5 +1,5 @@
 import { useRef } from "react";
-import css from "./ControlMenu.module.css";
+import css from "./ControlMenu.module.scss";
 import errorAsValue from "../../util/ErrorAsValue";
 
 type ControlMenuProps = {
