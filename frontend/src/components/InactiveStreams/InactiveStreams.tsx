@@ -11,17 +11,28 @@ type InactiveStreamsProps = {
 export default function InactiveStreams(props: InactiveStreamsProps) {
     const [showInactiveStreams, setShowInactiveStreams] = useState(false);
 
+    const hiddenStreamsCount = Array.from(props.streams.values()).filter(
+        stream => !stream.isBeingWatched
+    ).length;
+
     return (
         <>
             <button
                 className={css.button}
-                onClick={() => setShowInactiveStreams(!showInactiveStreams)}
+                onClick={() => setShowInactiveStreams(true)}
             >
-                Show inactive streams
+                Zeige ausgeblendete Streams ({hiddenStreamsCount})
             </button>
             {createPortal(
                 showInactiveStreams && (
                     <div className={css.inactiveStreamsContainer}>
+                        <button
+                            className={css.button}
+                            onClick={() => setShowInactiveStreams(false)}
+                        >
+                            Zurück
+                        </button>
+                        <div></div>
                         {Array.from(props.streams.values()).map(stream =>
                             stream.isBeingWatched ? null : stream.clientID
                         )}
