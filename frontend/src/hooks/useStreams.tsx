@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { StreamsService } from "../services/StreamsService";
 import { ClientID } from "../services/RoomService";
+import { assert } from "../util/Assert";
 
 export type Stream = {
     clientID: ClientID;
@@ -73,7 +74,7 @@ export const useStreams = (streamsService: StreamsService) => {
 
     /**
      * Updates the local media stream in the streams state.
-     * stream can be set as the local stream, or `undefined` to clear it.
+     * `mediaStream` can be set as the local stream, or `undefined` to clear it.
      */
     const setLocalStream = (mediaStream: MediaStream | undefined) => {
         setStreams(prevStreams => {
@@ -92,5 +93,17 @@ export const useStreams = (streamsService: StreamsService) => {
             return updatedStreams;
         });
     };
-    return { streams, setLocalStream };
+
+    const setBeingWatched = (clientID: ClientID, isBeingWatched: boolean) => {
+        setStreams(prevStreams => {
+            const stream = prevStreams.get(clientID);
+
+            assert(stream, `Stream with clientID ${clientID} not found`);
+
+            stream.isBeingWatched = isBeingWatched;
+            return new Map(prevStreams);
+        });
+    };
+
+    return { streams, setLocalStream, setBeingWatched };
 };

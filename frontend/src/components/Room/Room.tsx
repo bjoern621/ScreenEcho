@@ -30,7 +30,9 @@ export default function Room() {
         // webrtc.startCall(
     }
 
-    const { streams, setLocalStream } = useStreams(streamsServiceRef.current);
+    const { streams, setLocalStream, setBeingWatched } = useStreams(
+        streamsServiceRef.current
+    );
 
     return (
         <div className={css.container}>
@@ -54,12 +56,23 @@ export default function Room() {
                                     <StreamView
                                         key={stream.clientID}
                                         videoSrc={stream.srcObject}
+                                        onHideStream={() => {
+                                            setBeingWatched(
+                                                stream.clientID,
+                                                false
+                                            );
+                                        }}
                                     />
                                 ) : null
                             )}
                         </div>
                     </div>
-                    <InactiveStreams streams={streams}></InactiveStreams>
+                    <InactiveStreams
+                        streams={streams}
+                        setBeingWatched={clientID =>
+                            setBeingWatched(clientID, true)
+                        }
+                    ></InactiveStreams>
                 </>
             )}
             <ControlMenu

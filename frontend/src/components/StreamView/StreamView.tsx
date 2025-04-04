@@ -4,6 +4,7 @@ import hideIcon from "../../assets/icons8-expand-arrow-64.png";
 
 interface StreamViewProps {
     videoSrc: MediaProvider | undefined;
+    onHideStream: () => void;
 }
 
 export default function StreamView(props: StreamViewProps) {
@@ -43,6 +44,7 @@ export default function StreamView(props: StreamViewProps) {
                     </div>
                     <button
                         className={`${css.hideStreamButton} tooltip-on-hover`}
+                        onClick={() => props.onHideStream()}
                     >
                         <img src={hideIcon} alt="" />
                         <span className="tooltip top">Stream ausblenden</span>

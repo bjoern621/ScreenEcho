@@ -6,6 +6,7 @@ import { useState } from "react";
 
 type InactiveStreamsProps = {
     streams: Map<ClientID, Stream>;
+    setBeingWatched: (clientID: ClientID) => void;
 };
 
 export default function InactiveStreams(props: InactiveStreamsProps) {
@@ -34,7 +35,16 @@ export default function InactiveStreams(props: InactiveStreamsProps) {
                         </button>
                         <div></div>
                         {Array.from(props.streams.values()).map(stream =>
-                            stream.isBeingWatched ? null : stream.clientID
+                            stream.isBeingWatched ? null : (
+                                <span
+                                    key={stream.clientID}
+                                    onClick={() =>
+                                        props.setBeingWatched(stream.clientID)
+                                    }
+                                >
+                                    stream.clientID
+                                </span>
+                            )
                         )}
                     </div>
                 ),
