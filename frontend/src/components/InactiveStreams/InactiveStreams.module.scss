@@ -27,6 +27,11 @@
     width: 100%;
 
     background-color: rgba(207, 31, 31, 0.753);
+
+    &::backdrop {
+        background-color: transparent;
+        backdrop-filter: blur(1px);
+    }
 }
 
 .dialog-content {
