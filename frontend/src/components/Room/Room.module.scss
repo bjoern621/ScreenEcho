@@ -9,20 +9,23 @@
 
     padding: 0 10px;
 
-    display: flex; // vertical margin does not work without this
+    display: flex; // center streams vertically
 }
 
 .active-streams {
+    width: 100%;
+
     display: flex;
     flex-direction: row;
 
     justify-content: center;
+    align-content: center;
 
     gap: 15px;
 
     flex-wrap: wrap;
 
-    margin: auto; // center (horizontally) + vertically
+    margin: auto 0; // needed when scrollbar is visible
 }
 
 .container {
