@@ -7,6 +7,7 @@ import (
 	"bjoernblessin.de/screenecho/clients"
 	"bjoernblessin.de/screenecho/connection"
 	"bjoernblessin.de/screenecho/rooms"
+	"bjoernblessin.de/screenecho/signaling"
 	"bjoernblessin.de/screenecho/streams"
 )
 
@@ -20,6 +21,8 @@ func main() {
 	roomManager := rooms.NewRoomManager(clientManager)
 
 	streams.NewStreamManager(clientManager, roomManager)
+
+	signaling.NewSignalingManager(clientManager)
 
 	http.HandleFunc("/room/{roomID}/connect", roomManager.HandleConnect)
 	// http.HandleFunc("/room/create", rooms.HandleCreate)

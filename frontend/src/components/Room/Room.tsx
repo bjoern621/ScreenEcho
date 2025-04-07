@@ -31,8 +31,6 @@ export default function Room() {
     const webrtcServiceRef = useRef<WebRTCService | undefined>(undefined);
     if (!webrtcServiceRef.current) {
         webrtcServiceRef.current = new WebRTCService(roomServiceRef.current);
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
-        (window as any).webrtcService = webrtcServiceRef.current;
     }
 
     const { streams, setLocalStream, setBeingWatched } = useStreams(

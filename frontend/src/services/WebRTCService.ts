@@ -3,6 +3,7 @@ import { ClientID, RoomService, TypedMessage } from "./RoomService";
 
 const SDP_OFFER_MESSAGE_TYPE: string = "sdp-offer";
 const SDP_ANSWER_MESSAGE_TYPE: string = "sdp-answer";
+const NEW_ICE_CANDIDATE_MESSAGE_TYPE: string = "new-ice-candidate";
 
 type ClientSDPOfferMessage = {
     calleeClientID: ClientID;
@@ -19,11 +20,16 @@ type SDPAnswerMessage = {
     answer: RTCSessionDescriptionInit;
 };
 
+type NEWIceCandidateMessage = {
+    remoteClientID: ClientID;
+    candidate: RTCIceCandidateInit;
+};
+
 const RTCConfig: RTCConfiguration = {
     iceServers: [
-        {
-            urls: "stun:stun.l.google.com:19302",
-        },
+        { urls: "stun:stun.l.google.com:19302" },
+        { urls: "stun:stun1.l.google.com:19302" },
+        { urls: "stun:stun2.l.google.com:19302" },
     ],
 };
 
@@ -32,16 +38,17 @@ export class WebRTCService {
 
     private readonly peers: Map<ClientID, RTCPeerConnection> = new Map();
 
+    private localStream: MediaStream | undefined = undefined;
+
     public constructor(roomService: RoomService) {
         this.roomService = roomService;
 
-        roomService.subscribeMessage(
-            SDP_OFFER_MESSAGE_TYPE,
-            message =>
-                void this.handleSDPOffer(
-                    message as TypedMessage<ServerSDPOfferMessage>
-                )
-        );
+        // TODO timeout test (comment out)
+        roomService.subscribeMessage(SDP_OFFER_MESSAGE_TYPE, message => {
+            void this.handleSDPOffer(
+                message as TypedMessage<ServerSDPOfferMessage>
+            );
+        });
     }
 
     private async handleSDPOffer(
@@ -54,9 +61,23 @@ export class WebRTCService {
             "Peer already exists"
         );
 
+        assert(
+            this.localStream,
+            "Local stream must be set before handling an offer"
+        );
+
         const peer = new RTCPeerConnection(RTCConfig);
 
-        this.peers.set(typedMessage.msg.callerClientID, peer);
+        console.log(peer);
+
+        // TODO
+        this.localStream.getTracks().forEach(track => {
+            console.log("Adding track: ", track);
+            peer.addTrack(track, this.localStream!);
+        });
+
+        this.listenToRemoteICECandidates(peer, typedMessage.msg.callerClientID);
+        this.gatherICECandidates(peer, typedMessage.msg.callerClientID);
 
         const remoteDesc = new RTCSessionDescription(typedMessage.msg.offer);
         await peer.setRemoteDescription(remoteDesc);
@@ -72,6 +93,8 @@ export class WebRTCService {
             },
         };
         this.roomService.sendMessage(answerMessage);
+
+        this.peers.set(typedMessage.msg.callerClientID, peer);
     }
 
     /**
@@ -85,9 +108,16 @@ export class WebRTCService {
 
         const peer = new RTCPeerConnection(RTCConfig);
 
-        this.peers.set(clientID, peer);
+        console.log(peer);
 
-        const offer: RTCSessionDescriptionInit = await peer.createOffer();
+        this.listenToRemoteICECandidates(peer, clientID);
+        this.gatherICECandidates(peer, clientID);
+
+        // Create a PeerConnection with no streams, but force a audio and video line.
+        const offer: RTCSessionDescriptionInit = await peer.createOffer({
+            // offerToReceiveAudio: true,
+            offerToReceiveVideo: true,
+        });
         await peer.setLocalDescription(offer);
 
         const offerMessage: TypedMessage<ClientSDPOfferMessage> = {
@@ -101,141 +131,67 @@ export class WebRTCService {
 
         this.roomService.subscribeMessage(SDP_ANSWER_MESSAGE_TYPE, message => {
             void (async () => {
+                console.log("Received answer");
+
                 const msg = message as TypedMessage<SDPAnswerMessage>;
                 const remoteDesc = new RTCSessionDescription(msg.msg.answer);
                 await peer.setRemoteDescription(remoteDesc);
             })();
         });
+
+        this.peers.set(clientID, peer);
+
+        peer.ontrack = event => {
+            const [remoteStream] = event.streams;
+            console.log("Received track: ", event.track);
+            console.log(remoteStream);
+        };
+    }
+
+    private gatherICECandidates(
+        peer: RTCPeerConnection,
+        remoteClientID: ClientID
+    ) {
+        peer.onicecandidate = event => {
+            if (event.candidate) {
+                const iceCandidateMessage: TypedMessage<NEWIceCandidateMessage> =
+                    {
+                        type: NEW_ICE_CANDIDATE_MESSAGE_TYPE,
+                        msg: {
+                            remoteClientID: remoteClientID,
+                            candidate: event.candidate.toJSON(),
+                        },
+                    };
+                this.roomService.sendMessage(iceCandidateMessage);
+            } else {
+                /* There are no more candidates coming during this negotiation */
+                console.log("ICE candidate gathering finished");
+            }
+        };
+    }
+
+    private listenToRemoteICECandidates(
+        peer: RTCPeerConnection,
+        remoteClientID: ClientID
+    ) {
+        this.roomService.subscribeMessage(
+            NEW_ICE_CANDIDATE_MESSAGE_TYPE,
+            message => {
+                void (async () => {
+                    const msg = message as TypedMessage<NEWIceCandidateMessage>;
+
+                    if (msg.msg.remoteClientID !== remoteClientID) {
+                        return;
+                    }
+
+                    const candidate = new RTCIceCandidate(msg.msg.candidate);
+                    await peer.addIceCandidate(candidate);
+                })();
+            }
+        );
+    }
+
+    public setLocalStream(mediaStream: MediaStream | undefined) {
+        this.localStream = mediaStream;
     }
 }
-
-// export function reuqe() {}
-
-// export class WebRTCService {
-//     private peer1: RTCPeerConnection = new RTCPeerConnection(RTCConfig);
-//     private signalingSocket: WebSocket = new WebSocket(
-//         "ws://localhost:8080/sdp"
-//     );
-
-//     // export function attachMediaTrack(track: MediaStreamTrack) {
-//     //     peer1.addTrack(track);
-//     // }
-
-//     // type SDPMessage = {
-//     //     offer?: RTCSessionDescriptionInit;
-//     //     answer?: RTCSessionDescriptionInit;
-//     // };
-
-//     /**
-//      * Makes a call to the server to establish a WebRTC connection.
-//      */
-//     public async makeCall() {
-//         console.log("Making call");
-
-//         // peer1 = new RTCPeerConnection(RTCConfig);
-//         const offer: RTCSessionDescriptionInit = await this.peer1.createOffer();
-//         await this.peer1.setLocalDescription(offer);
-
-//         // signalingSocket = new WebSocket("ws://localhost:8080/sdp");
-//         // const signalingSocket: WebSocket = new WebSocket("ws://localhost:8080/sdp");
-
-//         this.signalingSocket.onopen = () =>
-//             this.signalingSocket.send(JSON.stringify({ offer: offer }));
-
-//         this.signalingSocket.onmessage = async event => {
-//             console.log("here");
-//             const data = JSON.parse(event.data);
-
-//             if (data.answer) {
-//                 console.log("Received answer");
-
-//                 const answer: RTCSessionDescriptionInit = data.answer;
-
-//                 const remoteDesc = new RTCSessionDescription(answer);
-//                 await this.peer1.setRemoteDescription(remoteDesc);
-//             }
-//         };
-//     }
-
-//     public listenToJoiningUsers() {
-//         // const peer2 = new RTCPeerConnection(RTCConfig);
-//         const dwadwa = 4;
-//         console.log(dwadwa);
-
-//         // const signalingSocket: WebSocket = new WebSocket("ws://localhost:8080/sdp");
-//         console.log("a");
-
-//         this.signalingSocket.addEventListener("message", async event => {
-//             console.log("abc " + event.data);
-//             console.log(event.data.offer);
-
-//             const data = JSON.parse(event.data);
-//             console.log(data.offer);
-
-//             if (data.offer) {
-//                 console.log("Received offer");
-
-//                 const offer: RTCSessionDescriptionInit = data.offer;
-
-//                 console.log(offer);
-
-//                 const remoteDesc = new RTCSessionDescription(offer);
-//                 console.log(remoteDesc);
-
-//                 await this.peer1.setRemoteDescription(remoteDesc);
-
-//                 const answer: RTCSessionDescriptionInit =
-//                     await this.peer1.createAnswer();
-//                 await this.peer1.setLocalDescription(answer);
-
-//                 this.signalingSocket.send(JSON.stringify({ answer: answer }));
-//             }
-//         });
-
-//         // this.signalingSocket.onmessage = async event => {
-
-//         // };
-//     }
-
-//     // async function onCreateOfferSuccess(desc) {
-//     //     console.log(`Offer from pc1\nsdp: ${desc.sdp}`);
-//     //     try {
-//     //         await localPeer.setLocalDescription(desc);
-//     //     } catch (e) {
-//     //         onCatch(e);
-//     //     }
-
-//     //     try {
-//     //         await remotePeer.setRemoteDescription(desc);
-//     //     } catch (e) {
-//     //         onCatch(e);
-//     //     }
-
-//     //     try {
-//     //         const answer = await remotePeer.createAnswer();
-//     //         await onCreateAnswerSuccess(answer);
-//     //     } catch (e) {
-//     //         onCatch(e);
-//     //     }
-//     // }
-
-//     // function gotRemoteStream(e) {
-//     //     if (remoteVideo.srcObject !== e.streams[0]) {
-//     //         remoteVideo.srcObject = e.streams[0];
-//     //     }
-//     // }
-
-//     // async function onCreateAnswerSuccess(desc) {
-//     //     try {
-//     //         await remotePeer.setLocalDescription(desc);
-//     //     } catch (e) {
-//     //         onCatch(e);
-//     //     }
-
-//     //     try {
-//     //         await localPeer.setRemoteDescription(desc);
-//     //     } catch (e) {
-//     //         onCatch(e);
-//     //     }
-//     // }
-// }
