@@ -30,15 +30,22 @@ export const useStreams = (
     const [streams, setStreams] = useState<Stream[]>([]);
 
     useEffect(() => {
-        const handleNewTrack = (
-            clientID: ClientID,
-            remoteStream: MediaStream
-        ) => {
+        /**
+         * Updates the streams state with the new `MediaStream` received from the `WebRTCService`.
+         * The stream is identified by its clientID.
+         *
+         * If the `MediaStream` exists in the state, it will be updated with the new stream.
+         * If the `MediaStream` does not exist, it will not be added to the state.
+         */
+        const handleNewTrack = (data: {
+            clientID: ClientID;
+            stream: MediaStream;
+        }) => {
             setStreams(prevStreams =>
-                prevStreams.map(stream =>
-                    stream.clientID === clientID
-                        ? { ...stream, srcObject: remoteStream }
-                        : stream
+                prevStreams.map(existingStream =>
+                    existingStream.clientID === data.clientID
+                        ? { ...existingStream, srcObject: data.stream }
+                        : existingStream
                 )
             );
         };

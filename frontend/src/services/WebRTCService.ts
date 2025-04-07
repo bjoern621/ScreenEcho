@@ -1,4 +1,6 @@
 import { assert } from "../util/Assert";
+import { IObservable, Observable } from "../util/observer/observable";
+import { Observer } from "../util/observer/Observer";
 import { ClientID, RoomService, TypedMessage } from "./RoomService";
 
 const SDP_OFFER_MESSAGE_TYPE: string = "sdp-offer";
@@ -33,12 +35,19 @@ const RTCConfig: RTCConfiguration = {
     ],
 };
 
-export class WebRTCService {
+export class WebRTCService
+    implements IObservable<{ clientID: ClientID; stream: MediaStream }>
+{
     private readonly roomService: RoomService;
 
     // private readonly peers: Map<ClientID, RTCPeerConnection> = new Map();
 
     private localStream: MediaStream | undefined = undefined;
+
+    private readonly observable: IObservable<{
+        clientID: ClientID;
+        stream: MediaStream;
+    }> = new Observable<{ clientID: ClientID; stream: MediaStream }>();
 
     public constructor(roomService: RoomService) {
         this.roomService = roomService;
@@ -49,6 +58,22 @@ export class WebRTCService {
                 message as TypedMessage<ServerSDPOfferMessage>
             );
         });
+    }
+
+    public subscribe(
+        observer: Observer<{ clientID: ClientID; stream: MediaStream }>
+    ): void {
+        this.observable.subscribe(observer);
+    }
+
+    public unsubscribe(
+        observer: Observer<{ clientID: ClientID; stream: MediaStream }>
+    ): void {
+        this.observable.unsubscribe(observer);
+    }
+
+    public notify(data: { clientID: ClientID; stream: MediaStream }): void {
+        this.observable.notify(data);
     }
 
     private async handleSDPOffer(
@@ -148,9 +173,10 @@ export class WebRTCService {
         peer.ontrack = event => {
             const [remoteStream] = event.streams;
             console.log(remoteStream);
-            this.listeners.forEach(listener => {
-                listener(clientID, remoteStream);
-            });
+            this.notify({ clientID, stream: remoteStream });
+            // this.listeners.forEach(listener => {
+            //     listener(clientID, remoteStream);
+            // });
         };
     }
 
@@ -199,22 +225,5 @@ export class WebRTCService {
 
     public setLocalStream(mediaStream: MediaStream | undefined) {
         this.localStream = mediaStream;
-    }
-
-    private listeners: ((
-        streams: ClientID,
-        remoteStream: MediaStream
-    ) => void)[] = [];
-
-    public subscribe(
-        listener: (streams: ClientID, remoteStream: MediaStream) => void
-    ): void {
-        this.listeners.push(listener);
-    }
-
-    public unsubscribe(
-        listener: (streams: ClientID, remoteStream: MediaStream) => void
-    ): void {
-        this.listeners = this.listeners.filter(l => l !== listener);
     }
 }
