@@ -8,6 +8,7 @@ import InactiveStreams from "../InactiveStreams/InactiveStreams";
 import { RoomService } from "../../services/RoomService";
 import { StreamsService } from "../../services/StreamsService";
 import { LOCAL_STREAM_ID, useStreams } from "../../hooks/useStreams";
+import { WebRTCService } from "../../services/WebRTCService";
 
 export default function Room() {
     const { roomID } = useParams();
@@ -25,19 +26,24 @@ export default function Room() {
     const streamsServiceRef = useRef<StreamsService | undefined>(undefined);
     if (!streamsServiceRef.current) {
         streamsServiceRef.current = new StreamsService(roomServiceRef.current);
+    }
 
-        // const webrtc = new WebRTCService(streamsServiceRef.current);
-        // webrtc.startCall(
+    const webrtcServiceRef = useRef<WebRTCService | undefined>(undefined);
+    if (!webrtcServiceRef.current) {
+        webrtcServiceRef.current = new WebRTCService(roomServiceRef.current);
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-explicit-any
+        (window as any).webrtcService = webrtcServiceRef.current;
     }
 
     const { streams, setLocalStream, setBeingWatched } = useStreams(
-        streamsServiceRef.current
+        streamsServiceRef.current,
+        webrtcServiceRef.current
     );
 
     return (
         <div className={css.container}>
             Room: {roomID}
-            {streams.size == 0 ? (
+            {streams.length == 0 ? (
                 <div className={css.noActiveStreams}>
                     <img
                         src="/src/assets/sad.png"
@@ -51,7 +57,7 @@ export default function Room() {
                 <>
                     <div className={css.activeStreamsContainer}>
                         <div className={css.activeStreams}>
-                            {Array.from(streams.values()).map(stream =>
+                            {streams.map(stream =>
                                 stream.isBeingWatched ? (
                                     <StreamView
                                         key={stream.clientID}
@@ -60,6 +66,8 @@ export default function Room() {
                                             setBeingWatched(
                                                 stream.clientID,
                                                 false
+                                            ).catch(error =>
+                                                console.log(error)
                                             );
                                         }}
                                     />
@@ -69,25 +77,35 @@ export default function Room() {
                     </div>
                     <InactiveStreams
                         streams={streams}
-                        setBeingWatched={clientID =>
-                            setBeingWatched(clientID, true)
-                        }
+                        setBeingWatched={clientID => {
+                            setBeingWatched(clientID, true).catch(error =>
+                                console.log(error)
+                            );
+                        }}
                     ></InactiveStreams>
                 </>
             )}
             <ControlMenu
-                isStreaming={streams.has(LOCAL_STREAM_ID)}
+                isStreaming={streams.some(
+                    stream => stream.clientID === LOCAL_STREAM_ID
+                )}
                 onStartStream={(captureStream: MediaStream) => {
                     setLocalStream(captureStream);
 
                     Assert.assert(streamsServiceRef.current);
                     streamsServiceRef.current.sendStreamStartedMessage();
+
+                    Assert.assert(webrtcServiceRef.current);
+                    webrtcServiceRef.current.setLocalStream(captureStream);
                 }}
                 onEndStream={() => {
                     setLocalStream(undefined);
 
                     Assert.assert(streamsServiceRef.current);
                     streamsServiceRef.current.sendStreamStoppedMessage();
+
+                    Assert.assert(webrtcServiceRef.current);
+                    webrtcServiceRef.current.setLocalStream(undefined);
                 }}
             ></ControlMenu>
         </div>

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { StreamsService } from "../services/StreamsService";
 import { ClientID } from "../services/RoomService";
-import { assert } from "../util/Assert";
+import { WebRTCService } from "../services/WebRTCService";
 
 export type Stream = {
     clientID: ClientID;
@@ -11,6 +11,7 @@ export type Stream = {
      * `undefined` if no WEBRTC connection is established yet.
      */
     srcObject: MediaStream | undefined;
+    peerConnection: RTCPeerConnection | undefined;
 };
 
 export const LOCAL_STREAM_ID = "localStream";
@@ -18,47 +19,45 @@ export const LOCAL_STREAM_ID = "localStream";
 /**
  * Hook to manage and update the state of available streams.
  */
-export const useStreams = (streamsService: StreamsService) => {
+export const useStreams = (
+    streamsService: StreamsService,
+    webrtcService: WebRTCService
+) => {
     // Containts the currently active streams in the room.
-    const [streams, setStreams] = useState<Map<ClientID, Stream>>(new Map());
+    const [streams, setStreams] = useState<Stream[]>([]);
 
     useEffect(() => {
         /**
          * Updates the streams state with the active streams from the StreamsService.
          *
          * Previous streams are removed from the state if they are no longer available.
-         * New streams are added to the state with `isBeingWatched: true`.
          * Remaining streams and the state of the local stream is preserved.
          *
          * The order of the streams is not guaranteed.
          */
         const handleActiveStreamsUpdate = (streamClientIDs: ClientID[]) => {
-            setStreams(prevStreams => {
-                const updatedStreams = new Map<ClientID, Stream>();
+            setStreams((prevStreams: Stream[]) => {
+                const streamClientIDsSet = new Set(streamClientIDs);
 
-                // Add the local stream if it exists
-                const localStream = prevStreams.get(LOCAL_STREAM_ID);
-                if (localStream) {
-                    updatedStreams.set(LOCAL_STREAM_ID, localStream);
-                }
+                // Keep still active streams and the local stream
+                const updatedStreams = prevStreams.filter(stream => {
+                    streamClientIDsSet.delete(stream.clientID);
 
-                // Add new or use existing streams (implicitly remove old ones)
-                streamClientIDs.forEach(clientID => {
-                    const existingStream = prevStreams.get(clientID);
+                    return (
+                        streamClientIDsSet.has(stream.clientID) ||
+                        stream.clientID === LOCAL_STREAM_ID
+                    );
+                });
 
-                    if (existingStream) {
-                        updatedStreams.set(clientID, {
-                            clientID,
-                            isBeingWatched: existingStream.isBeingWatched,
-                            srcObject: existingStream.srcObject,
-                        });
-                    } else {
-                        updatedStreams.set(clientID, {
-                            clientID,
-                            isBeingWatched: true,
-                            srcObject: undefined,
-                        });
-                    }
+                // streamClientIDsSet now contains only the new streams, i.e. the streams that are in streamClientIDs but not in prevStreams.
+                // Add new streams to the state
+                streamClientIDsSet.forEach(clientID => {
+                    updatedStreams.push({
+                        clientID,
+                        isBeingWatched: false,
+                        srcObject: undefined,
+                        peerConnection: undefined,
+                    });
                 });
 
                 return updatedStreams;
@@ -78,15 +77,16 @@ export const useStreams = (streamsService: StreamsService) => {
      */
     const setLocalStream = (mediaStream: MediaStream | undefined) => {
         setStreams(prevStreams => {
-            const updatedStreams = new Map(prevStreams);
+            const updatedStreams = prevStreams.filter(
+                stream => stream.clientID !== LOCAL_STREAM_ID
+            );
 
-            if (!mediaStream) {
-                updatedStreams.delete(LOCAL_STREAM_ID);
-            } else {
-                updatedStreams.set(LOCAL_STREAM_ID, {
+            if (mediaStream) {
+                updatedStreams.push({
                     clientID: LOCAL_STREAM_ID,
                     isBeingWatched: true,
                     srcObject: mediaStream,
+                    peerConnection: undefined,
                 });
             }
 
@@ -94,15 +94,29 @@ export const useStreams = (streamsService: StreamsService) => {
         });
     };
 
-    const setBeingWatched = (clientID: ClientID, isBeingWatched: boolean) => {
+    const setBeingWatched = async (
+        clientID: ClientID,
+        isBeingWatched: boolean
+    ) => {
         setStreams(prevStreams => {
-            const stream = prevStreams.get(clientID);
+            const updatedStreams = prevStreams.map(stream => {
+                if (stream.clientID === clientID) {
+                    // const streamWithRTCConnection =
+                    // checkIfRTCConnectionMustChange(stream, isBeingWatched);
+                    return { ...stream, isBeingWatched };
+                }
 
-            assert(stream, `Stream with clientID ${clientID} not found`);
+                return stream;
+            });
 
-            stream.isBeingWatched = isBeingWatched;
-            return new Map(prevStreams);
+            return updatedStreams;
         });
+
+        // TODO
+        if (isBeingWatched && clientID !== LOCAL_STREAM_ID) {
+            // Start the stream and create a new peer connection
+            await webrtcService.makeCall(clientID);
+        }
     };
 
     return { streams, setLocalStream, setBeingWatched };

@@ -6,7 +6,7 @@ import css from "./InactiveStreams.module.scss";
 import { useRef } from "react";
 
 type InactiveStreamsProps = {
-    streams: Map<ClientID, Stream>;
+    streams: Stream[];
     setBeingWatched: (clientID: ClientID) => void;
 };
 
@@ -40,7 +40,7 @@ export default function InactiveStreams(props: InactiveStreamsProps) {
                         Zurück
                     </button>
                     <div className={css.inactiveStreamsContainer}>
-                        {Array.from(props.streams.values()).map(stream =>
+                        {props.streams.map(stream =>
                             stream.isBeingWatched ? null : (
                                 <HiddenStream
                                     key={stream.clientID}
