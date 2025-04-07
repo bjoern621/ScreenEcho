@@ -23,8 +23,32 @@ export const useStreams = (
     streamsService: StreamsService,
     webrtcService: WebRTCService
 ) => {
-    // Containts the currently active streams in the room.
+    /**
+     * Containts the currently active streams in the room.
+     * The order of the streams is not guaranteed.
+     */
     const [streams, setStreams] = useState<Stream[]>([]);
+
+    useEffect(() => {
+        const handleNewTrack = (
+            clientID: ClientID,
+            remoteStream: MediaStream
+        ) => {
+            setStreams(prevStreams =>
+                prevStreams.map(stream =>
+                    stream.clientID === clientID
+                        ? { ...stream, srcObject: remoteStream }
+                        : stream
+                )
+            );
+        };
+
+        webrtcService.subscribe(handleNewTrack);
+
+        return () => {
+            webrtcService.unsubscribe(handleNewTrack);
+        };
+    }, [webrtcService]);
 
     useEffect(() => {
         /**
@@ -32,8 +56,6 @@ export const useStreams = (
          *
          * Previous streams are removed from the state if they are no longer available.
          * Remaining streams and the state of the local stream is preserved.
-         *
-         * The order of the streams is not guaranteed.
          */
         const handleActiveStreamsUpdate = (streamClientIDs: ClientID[]) => {
             setStreams((prevStreams: Stream[]) => {

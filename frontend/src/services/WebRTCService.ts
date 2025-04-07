@@ -36,7 +36,7 @@ const RTCConfig: RTCConfiguration = {
 export class WebRTCService {
     private readonly roomService: RoomService;
 
-    private readonly peers: Map<ClientID, RTCPeerConnection> = new Map();
+    // private readonly peers: Map<ClientID, RTCPeerConnection> = new Map();
 
     private localStream: MediaStream | undefined = undefined;
 
@@ -56,10 +56,10 @@ export class WebRTCService {
     ) {
         console.log("Received offer");
 
-        assert(
-            !this.peers.has(typedMessage.msg.callerClientID),
-            "Peer already exists"
-        );
+        // assert(
+        //     !this.peers.has(typedMessage.msg.callerClientID),
+        //     "Peer already exists"
+        // );
 
         assert(
             this.localStream,
@@ -67,8 +67,6 @@ export class WebRTCService {
         );
 
         const peer = new RTCPeerConnection(RTCConfig);
-
-        console.log(peer);
 
         // TODO
         this.localStream.getTracks().forEach(track => {
@@ -94,7 +92,11 @@ export class WebRTCService {
         };
         this.roomService.sendMessage(answerMessage);
 
-        this.peers.set(typedMessage.msg.callerClientID, peer);
+        // this.peers.set(typedMessage.msg.callerClientID, peer);
+
+        peer.onconnectionstatechange = () => {
+            console.log(peer.connectionState);
+        };
     }
 
     /**
@@ -104,11 +106,9 @@ export class WebRTCService {
     public async makeCall(clientID: ClientID) {
         console.log("Making call");
 
-        assert(!this.peers.has(clientID), "Peer already exists");
+        // assert(!this.peers.has(clientID), "Peer already exists");
 
         const peer = new RTCPeerConnection(RTCConfig);
-
-        console.log(peer);
 
         this.listenToRemoteICECandidates(peer, clientID);
         this.gatherICECandidates(peer, clientID);
@@ -139,12 +139,18 @@ export class WebRTCService {
             })();
         });
 
-        this.peers.set(clientID, peer);
+        // this.peers.set(clientID, peer);
+
+        peer.onconnectionstatechange = () => {
+            console.log(peer.connectionState);
+        };
 
         peer.ontrack = event => {
             const [remoteStream] = event.streams;
-            console.log("Received track: ", event.track);
             console.log(remoteStream);
+            this.listeners.forEach(listener => {
+                listener(clientID, remoteStream);
+            });
         };
     }
 
@@ -193,5 +199,22 @@ export class WebRTCService {
 
     public setLocalStream(mediaStream: MediaStream | undefined) {
         this.localStream = mediaStream;
+    }
+
+    private listeners: ((
+        streams: ClientID,
+        remoteStream: MediaStream
+    ) => void)[] = [];
+
+    public subscribe(
+        listener: (streams: ClientID, remoteStream: MediaStream) => void
+    ): void {
+        this.listeners.push(listener);
+    }
+
+    public unsubscribe(
+        listener: (streams: ClientID, remoteStream: MediaStream) => void
+    ): void {
+        this.listeners = this.listeners.filter(l => l !== listener);
     }
 }
