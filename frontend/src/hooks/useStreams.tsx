@@ -143,7 +143,7 @@ export const useStreams = (
 
         if (isBeingWatched) {
             // Create a new RTC connection if being watched and no active RTC connection exists
-            webrtcService.makePerfectCall(clientID);
+            webrtcService.establishConnectionWithPeer(clientID);
 
             // setTimeout(() => {
             //     console.log("sending my own stream to the other client");

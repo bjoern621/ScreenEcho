@@ -1,19 +1,12 @@
 import errorAsValue from "../../util/ErrorAsValue";
 import { ClientID, RoomService, TypedMessage } from "../RoomService";
+import {
+    NEW_ICE_CANDIDATE_MESSAGE_TYPE,
+    NEWIceCandidateMessage,
+    SDP_MESSAGE_TYPE,
+    SDPMessage,
+} from "../WebRTCService";
 import { Peer } from "./Peer";
-
-const NEW_ICE_CANDIDATE_MESSAGE_TYPE: string = "new-ice-candidate";
-const SDP_MESSAGE_TYPE: string = "sdp-message";
-
-type NEWIceCandidateMessage = {
-    remoteClientID: ClientID;
-    candidate: RTCIceCandidateInit;
-};
-
-type SDPMessage = {
-    remoteClientID: ClientID;
-    description: RTCSessionDescriptionInit;
-};
 
 const RTCConfig: RTCConfiguration = {
     iceServers: [
@@ -36,7 +29,7 @@ export class PerfectPeer implements Peer {
 
     private ignoreOffer = false;
     private isSettingRemoteAnswerPending = false;
-    private readonly polite;
+    private readonly polite: boolean;
 
     public constructor(roomService: RoomService, remoteClientID: ClientID) {
         this.roomService = roomService;
@@ -48,8 +41,6 @@ export class PerfectPeer implements Peer {
         this.handleIncomingTracks();
         this.handleNegotiationNeeded();
         this.handleIncomingICECandidates();
-        this.handleRemoteSDPMessages();
-        this.handleRemoteICECandidates();
     }
 
     private setupPeerConnection() {
@@ -115,68 +106,75 @@ export class PerfectPeer implements Peer {
         };
     }
 
-    private handleRemoteSDPMessages() {
-        this.roomService.subscribeMessage(SDP_MESSAGE_TYPE, async message => {
-            const msg = message as TypedMessage<SDPMessage>;
+    private async handleRemoteSDPMessage(msg: TypedMessage<SDPMessage>) {
+        console.log(this.remoteClientID + " received SDP message");
 
-            const readyForOffer =
-                !this.makingOffer &&
-                (this.peerConnection.signalingState === "stable" ||
-                    this.isSettingRemoteAnswerPending);
-            const offerCollision =
-                msg.msg.description.type === "offer" && !readyForOffer;
+        const readyForOffer =
+            !this.makingOffer &&
+            (this.peerConnection.signalingState === "stable" ||
+                this.isSettingRemoteAnswerPending);
+        const offerCollision =
+            msg.msg.description.type === "offer" && !readyForOffer;
 
-            this.ignoreOffer = !this.polite && offerCollision;
-            if (this.ignoreOffer) {
-                return;
-            }
+        this.ignoreOffer = !this.polite && offerCollision;
+        if (this.ignoreOffer) {
+            return;
+        }
 
-            this.isSettingRemoteAnswerPending =
-                msg.msg.description.type === "answer";
-            const [,] = await errorAsValue(
-                this.peerConnection.setRemoteDescription(msg.msg.description)
-            );
-            this.isSettingRemoteAnswerPending = false;
-            if (msg.msg.description.type === "offer") {
-                await this.peerConnection.setLocalDescription();
+        this.isSettingRemoteAnswerPending =
+            msg.msg.description.type === "answer";
+        const [,] = await errorAsValue(
+            this.peerConnection.setRemoteDescription(msg.msg.description)
+        );
+        this.isSettingRemoteAnswerPending = false;
+        if (msg.msg.description.type === "offer") {
+            await this.peerConnection.setLocalDescription();
 
-                const descriptionMessage: TypedMessage<SDPMessage> = {
-                    type: SDP_MESSAGE_TYPE,
-                    msg: {
-                        remoteClientID: this.remoteClientID,
-                        description: this.peerConnection.localDescription!,
-                    },
-                };
-                this.roomService.sendMessage(descriptionMessage);
-            }
+            const descriptionMessage: TypedMessage<SDPMessage> = {
+                type: SDP_MESSAGE_TYPE,
+                msg: {
+                    remoteClientID: this.remoteClientID,
+                    description: this.peerConnection.localDescription!,
+                },
+            };
+            this.roomService.sendMessage(descriptionMessage);
+        }
 
-            const remoteDesc = new RTCSessionDescription(msg.msg.description);
-            const [,] = await errorAsValue(
-                this.peerConnection.setRemoteDescription(remoteDesc)
-            );
-        });
+        const remoteDesc = new RTCSessionDescription(msg.msg.description);
+        const [,] = await errorAsValue(
+            this.peerConnection.setRemoteDescription(remoteDesc)
+        );
     }
 
-    private handleRemoteICECandidates() {
-        this.roomService.subscribeMessage(
-            NEW_ICE_CANDIDATE_MESSAGE_TYPE,
-            async message => {
-                const msg = message as TypedMessage<NEWIceCandidateMessage>;
+    private async handleRemoteICECandidate(
+        msg: TypedMessage<NEWIceCandidateMessage>
+    ) {
+        if (msg.msg.remoteClientID !== this.remoteClientID) {
+            return;
+        }
 
-                if (msg.msg.remoteClientID !== this.remoteClientID) {
-                    return;
-                }
-
-                const candidate = new RTCIceCandidate(msg.msg.candidate);
-                const [, err] = await errorAsValue(
-                    this.peerConnection.addIceCandidate(candidate)
-                );
-                if (err) {
-                    if (!this.ignoreOffer) {
-                        console.error("Error adding ICE candidate:", err);
-                    }
-                }
+        const candidate = new RTCIceCandidate(msg.msg.candidate);
+        const [, err] = await errorAsValue(
+            this.peerConnection.addIceCandidate(candidate)
+        );
+        if (err) {
+            if (!this.ignoreOffer) {
+                console.error("Error adding ICE candidate:", err);
             }
+        }
+    }
+
+    public async onSDPMessageReceived(
+        msg: TypedMessage<unknown>
+    ): Promise<void> {
+        await this.handleRemoteSDPMessage(msg as TypedMessage<SDPMessage>);
+    }
+
+    public async onICECandidateReceived(
+        msg: TypedMessage<unknown>
+    ): Promise<void> {
+        await this.handleRemoteICECandidate(
+            msg as TypedMessage<NEWIceCandidateMessage>
         );
     }
 
