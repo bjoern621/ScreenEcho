@@ -83,20 +83,7 @@ func (cm *ConnectionManager) listenToMessages(conn *Conn) {
 			cm.closeMutex.Lock()
 			defer cm.closeMutex.Unlock()
 
-			conn.closeHandlersMutex.RLock()
-			defer conn.closeHandlersMutex.RUnlock()
-
-			var waitgroup sync.WaitGroup
-
-			for _, closeHandler := range conn.closeHandlers {
-				waitgroup.Add(1)
-				go func() {
-					defer waitgroup.Done()
-					closeHandler()
-				}()
-			}
-
-			waitgroup.Wait()
+			conn.notifyCloseHandlers()
 
 			return
 		}

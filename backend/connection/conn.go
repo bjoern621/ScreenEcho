@@ -21,7 +21,7 @@ type Conn struct {
 // However, there is no RemoveCloseHandler function, so once a handler is registered, it cannot be removed.
 //
 // When the WebSocket connection is closed, no more messages will be read or written.
-// The connection is considered invalid, and any pointers to Conn should be freed to avoid memory leaks.
+// The connection is considered invalid, and any pointers to Conn should be freed to avoid invalid state.
 func (conn *Conn) AddCloseHandler(handler func()) {
 	conn.closeHandlers = append(conn.closeHandlers, handler)
 }
@@ -59,4 +59,25 @@ func SendMessage[T any](conn *Conn, msg TypedMessage[T]) error {
 
 	err := conn.socket.WriteJSON(msg)
 	return err
+}
+
+// notifyCloseHandlers executes all registered close handlers in parallel,
+// waiting for all of them to finish before returning. It temporarily acquires
+// a read lock to safely access the list of handlers and uses a wait group
+// to track individual handler completion.
+func (conn *Conn) notifyCloseHandlers() {
+	conn.closeHandlersMutex.RLock()
+	defer conn.closeHandlersMutex.RUnlock()
+
+	var waitgroup sync.WaitGroup
+
+	for _, closeHandler := range conn.closeHandlers {
+		waitgroup.Add(1)
+		go func() {
+			defer waitgroup.Done()
+			closeHandler()
+		}()
+	}
+
+	waitgroup.Wait()
 }
