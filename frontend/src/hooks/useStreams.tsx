@@ -141,21 +141,9 @@ export const useStreams = (
             return;
         }
 
-        if (isBeingWatched) {
+        if (isBeingWatched && !webrtcService.hasPeerConnection(clientID)) {
             // Create a new RTC connection if being watched and no active RTC connection exists
             webrtcService.establishConnectionWithPeer(clientID);
-
-            // setTimeout(() => {
-            //     console.log("sending my own stream to the other client");
-
-            //     const s = streams.find(
-            //         stream => stream.clientID === LOCAL_STREAM_ID
-            //     )?.srcObject;
-
-            //     assert(s, "Local stream not found");
-
-            //     webrtcService.addLocalStream(clientID, s);
-            // }, 5000);
         } else if (
             !isBeingWatched &&
             webrtcService.hasPeerConnection(clientID)
