@@ -18,12 +18,6 @@ export type SDPMessage = {
     description: RTCSessionDescriptionInit;
 };
 
-const CONNECTION_REQUEST_MESSAGE_TYPE: string = "connection-request";
-
-type ConnectionRequestMessage = {
-    remoteClientID: ClientID;
-};
-
 export class WebRTCService
     implements IObservable<{ clientID: ClientID; stream: MediaStream }>
 {
@@ -41,19 +35,18 @@ export class WebRTCService
 
         // TODO timeout test (comment out)
 
-        roomService.subscribeMessage(
-            CONNECTION_REQUEST_MESSAGE_TYPE,
-            message => {
-                this.handleConnectionRequest(
-                    message as TypedMessage<ConnectionRequestMessage>
-                );
-            }
-        );
-
         this.forwardSDPMessageToRespectivePeer();
         this.forwardICECandidateToRespectivePeer();
     }
 
+    /**
+     * Sets up a subscription to forward ICE candidates to their respective peer connections.
+     *
+     * This method subscribes to ICE candidate messages from the room service and routes them
+     * to the appropriate peer connection. When a new ICE candidate message is received,
+     * it checks if the targeted peer exists in the peers collection and forwards
+     * the candidate information to that peer's handler.
+     */
     private forwardICECandidateToRespectivePeer() {
         this.roomService.subscribeMessage(
             NEW_ICE_CANDIDATE_MESSAGE_TYPE,
@@ -71,12 +64,20 @@ export class WebRTCService
         );
     }
 
+    /**
+     * Sets up a subscription to SDP (Session Description Protocol) messages from the room service
+     * and forwards them to the appropriate peer connection.
+     *
+     * This may be called even if the peer connection is not yet setup.
+     * The peer connection will be setup when the first SDP message is received.
+     */
     private forwardSDPMessageToRespectivePeer() {
         this.roomService.subscribeMessage(SDP_MESSAGE_TYPE, message => {
             const msg = message as TypedMessage<SDPMessage>;
 
             if (!this.peers.has(msg.msg.remoteClientID)) {
-                return;
+                // A remote peer is trying to connect to us.
+                this.setupPeer(msg.msg.remoteClientID);
             }
 
             void this.peers
@@ -85,20 +86,6 @@ export class WebRTCService
         });
     }
 
-    /**
-     * Handles an incoming connection request from a remote client.
-     * The remote client previously set up a peer connection and is now ready to establish a call.
-     */
-    private handleConnectionRequest(
-        msg: TypedMessage<ConnectionRequestMessage>
-    ): void {
-        if (!this.peers.has(msg.msg.remoteClientID)) {
-            this.setupPeer(msg.msg.remoteClientID);
-        }
-        this.establishConnectionWithPeer(msg.msg.remoteClientID);
-    }
-
-    // TODO perfect peer receiving messages that are not for them (differnet remote clientID)
     // TODO calling makeCall twice
 
     /**
@@ -107,24 +94,11 @@ export class WebRTCService
      * Otherwise, it sets up a new peer connection and sends a connection request.
      */
     public establishConnectionWithPeer(clientID: ClientID) {
-        if (this.peers.has(clientID)) {
-            this.peers.get(clientID)!.makeCall();
-        } else {
+        if (!this.peers.has(clientID)) {
             this.setupPeer(clientID);
-
-            this.sendConnectionRequest(clientID);
         }
-    }
 
-    private sendConnectionRequest(clientID: ClientID) {
-        const connectionRequestMessage: TypedMessage<ConnectionRequestMessage> =
-            {
-                type: CONNECTION_REQUEST_MESSAGE_TYPE,
-                msg: {
-                    remoteClientID: clientID,
-                },
-            };
-        this.roomService.sendMessage(connectionRequestMessage);
+        this.peers.get(clientID)!.makeCall();
     }
 
     public setupPeer(clientID: ClientID) {

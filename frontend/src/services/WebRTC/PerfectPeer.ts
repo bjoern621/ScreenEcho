@@ -194,8 +194,6 @@ export class PerfectPeer implements Peer {
                 direction: "recvonly",
             });
         }
-
-        console.log(this.peerConnection);
     }
 
     public setLocalStream(mediaStream: MediaStream): void {
