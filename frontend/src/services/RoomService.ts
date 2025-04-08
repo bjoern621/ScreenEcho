@@ -1,6 +1,6 @@
 import * as Assert from "../util/Assert";
 
-export type MessageHandler = (typedMessage: TypedMessage<unknown>) => void;
+export type MessageHandler = (typedMessage: TypedMessage<unknown>) => unknown;
 
 export type MessageType = string;
 
@@ -61,8 +61,8 @@ export class RoomService {
             "ws://localhost:8080/room/" + roomID + "/connect"
         );
 
-        this.roomSocket.onmessage = event => {
-            console.log("response form server: " + event.data);
+        this.roomSocket.onmessage = async event => {
+            console.log("response from server: " + event.data);
 
             if (typeof event.data !== "string") {
                 console.error("Invalid message data type:", typeof event.data);
@@ -76,7 +76,13 @@ export class RoomService {
             // Notify all subscribers for this message type
             const handlers = this.messageHandlers.get(typedMessage.type);
             if (handlers) {
-                handlers.forEach(handler => handler(typedMessage));
+                await Promise.allSettled(
+                    handlers.map(handler => handler(typedMessage))
+                );
+
+                // for (const handler of handlers) {
+                //     handler(typedMessage);
+                // }
             }
         };
     }

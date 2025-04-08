@@ -18,6 +18,7 @@ import (
 const SDP_OFFER_MESSAGE_TYPE = "sdp-offer"
 const SDP_ANSWER_MESSAGE_TYPE = "sdp-answer"
 const ICE_CANDIDATE_MESSAGE_TYPE = "new-ice-candidate"
+const SDP_MESSAGE_TYPE = "sdp-message"
 
 type SignalingManager struct {
 	clientManager *clients.ClientManager
@@ -31,8 +32,47 @@ func NewSignalingManager(clientManager *clients.ClientManager) *SignalingManager
 	clientManager.SubscribeMessage(SDP_OFFER_MESSAGE_TYPE, sm.handleSDPOffer)
 	clientManager.SubscribeMessage(SDP_ANSWER_MESSAGE_TYPE, sm.handleSDPAnswer)
 	clientManager.SubscribeMessage(ICE_CANDIDATE_MESSAGE_TYPE, sm.handleICECandidate)
+	clientManager.SubscribeMessage(SDP_MESSAGE_TYPE, sm.handleSDPMessage)
 
 	return sm
+}
+
+func (sm *SignalingManager) handleSDPMessage(client *clients.Client, typedMessage connection.TypedMessage[json.RawMessage]) {
+	type SDPMessage struct {
+		RemoteClientID string          `json:"remoteClientID"`
+		Description    json.RawMessage `json:"description"`
+	}
+
+	var msg SDPMessage
+	err := strictjson.Unmarshal(typedMessage.Msg, &msg)
+	if err != nil {
+		errorMsg := connection.BuildErrorMessage(fmt.Sprintf("Message had invalid JSON format. %v", err))
+		clients.SendMessage(client, errorMsg)
+		return
+	}
+
+	remoteClientID, err := uuid.Parse(msg.RemoteClientID)
+	if err != nil {
+		errorMsg := connection.BuildErrorMessage(fmt.Sprintf("remoteClientID is not a valid UUID. %v", err))
+		clients.SendMessage(client, errorMsg)
+		return
+	}
+
+	receiverClient := sm.clientManager.GetClientByID(clients.ClientID(remoteClientID))
+	if receiverClient == nil {
+		errorMsg := connection.BuildErrorMessage("Remote client not found.")
+		clients.SendMessage(client, errorMsg)
+		return
+	}
+
+	clients.SendMessage(receiverClient, connection.TypedMessage[SDPMessage]{
+		Type: SDP_MESSAGE_TYPE,
+		Msg: SDPMessage{
+			// Change remoteClientID to sender client's ID
+			RemoteClientID: client.ID.String(),
+			Description:    msg.Description,
+		},
+	})
 }
 
 // handleSPDOffer handles the SDP offer of a client offering a WebRTC connection.
@@ -142,11 +182,6 @@ func (sm *SignalingManager) handleICECandidate(client *clients.Client, typedMess
 		errorMsg := connection.BuildErrorMessage("Remote client not found.")
 		clients.SendMessage(client, errorMsg)
 		return
-	}
-
-	type ServerSDPOfferMessage struct {
-		CallerClientID string          `json:"callerClientID"`
-		Offer          json.RawMessage `json:"offer"`
 	}
 
 	clients.SendMessage(receiverClient, connection.TypedMessage[ICEMessage]{

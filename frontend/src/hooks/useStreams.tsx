@@ -11,7 +11,6 @@ export type Stream = {
      * `undefined` if no WEBRTC connection is established yet.
      */
     srcObject: MediaStream | undefined;
-    peerConnection: RTCPeerConnection | undefined;
 };
 
 export const LOCAL_STREAM_ID = "localStream";
@@ -85,7 +84,6 @@ export const useStreams = (
                         clientID,
                         isBeingWatched: false,
                         srcObject: undefined,
-                        peerConnection: undefined,
                     });
                 });
 
@@ -115,7 +113,6 @@ export const useStreams = (
                     clientID: LOCAL_STREAM_ID,
                     isBeingWatched: true,
                     srcObject: mediaStream,
-                    peerConnection: undefined,
                 });
             }
 
@@ -123,10 +120,7 @@ export const useStreams = (
         });
     };
 
-    const setBeingWatched = async (
-        clientID: ClientID,
-        isBeingWatched: boolean
-    ) => {
+    const setBeingWatched = (clientID: ClientID, isBeingWatched: boolean) => {
         setStreams(prevStreams => {
             const updatedStreams = prevStreams.map(stream => {
                 if (stream.clientID === clientID) {
@@ -141,10 +135,35 @@ export const useStreams = (
             return updatedStreams;
         });
 
-        // TODO
-        if (isBeingWatched && clientID !== LOCAL_STREAM_ID) {
-            // Start the stream and create a new peer connection
-            await webrtcService.makeCall(clientID);
+        // Manage the RTC connection
+
+        if (clientID === LOCAL_STREAM_ID) {
+            return;
+        }
+
+        if (isBeingWatched) {
+            // Create a new RTC connection if being watched and no active RTC connection exists
+            webrtcService.makePerfectCall(clientID);
+
+            // setTimeout(() => {
+            //     console.log("sending my own stream to the other client");
+
+            //     const s = streams.find(
+            //         stream => stream.clientID === LOCAL_STREAM_ID
+            //     )?.srcObject;
+
+            //     assert(s, "Local stream not found");
+
+            //     webrtcService.addLocalStream(clientID, s);
+            // }, 5000);
+        } else if (
+            !isBeingWatched &&
+            webrtcService.hasPeerConnection(clientID)
+        ) {
+            // Close the RTC connection if not being watched and an active RTC connection exists
+            console.log("wiil close peer connection (with cooldown)");
+
+            // webrtcService.closePeerConnection(clientID);
         }
     };
 
