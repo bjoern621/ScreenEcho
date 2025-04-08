@@ -86,22 +86,18 @@ export class WebRTCService
         });
     }
 
-    // TODO calling makeCall twice
-
     /**
      * Initiates a WebRTC call to a specified peer.
-     * If a connection with the peer already exists, it uses the existing connection to make the call.
-     * Otherwise, it sets up a new peer connection and sends a connection request.
      */
     public establishConnectionWithPeer(clientID: ClientID) {
-        if (!this.peers.has(clientID)) {
-            this.setupPeer(clientID);
-        }
+        assert(!this.peers.has(clientID), "Connection to peer already exists");
+
+        this.setupPeer(clientID);
 
         this.peers.get(clientID)!.makeCall();
     }
 
-    public setupPeer(clientID: ClientID) {
+    private setupPeer(clientID: ClientID) {
         assert(!this.peers.has(clientID), "Peer already exists");
 
         const peer: Peer = new PerfectPeer(this.roomService, clientID);
