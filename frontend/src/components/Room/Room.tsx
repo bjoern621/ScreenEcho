@@ -64,8 +64,6 @@ export default function Room() {
                                             setBeingWatched(
                                                 stream.clientID,
                                                 false
-                                            ).catch(error =>
-                                                console.log(error)
                                             );
                                         }}
                                     />
@@ -76,9 +74,7 @@ export default function Room() {
                     <InactiveStreams
                         streams={streams}
                         setBeingWatched={clientID => {
-                            setBeingWatched(clientID, true).catch(error =>
-                                console.log(error)
-                            );
+                            setBeingWatched(clientID, true);
                         }}
                     ></InactiveStreams>
                 </>
@@ -94,7 +90,7 @@ export default function Room() {
                     streamsServiceRef.current.sendStreamStartedMessage();
 
                     Assert.assert(webrtcServiceRef.current);
-                    webrtcServiceRef.current.setLocalStream(captureStream);
+                    // webrtcServiceRef.current.setLocalStream(captureStream);
                 }}
                 onEndStream={() => {
                     setLocalStream(undefined);
@@ -103,7 +99,7 @@ export default function Room() {
                     streamsServiceRef.current.sendStreamStoppedMessage();
 
                     Assert.assert(webrtcServiceRef.current);
-                    webrtcServiceRef.current.setLocalStream(undefined);
+                    // webrtcServiceRef.current.setLocalStream(undefined);
                 }}
             ></ControlMenu>
         </div>
