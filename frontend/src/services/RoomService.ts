@@ -184,7 +184,7 @@ export class RoomService {
     }
 
     public getLocalClientID(): ClientID {
-        Assert.assert(this.localClientID);
+        Assert.assert(this.localClientID, "Local Client ID not set yet.");
 
         return this.localClientID;
     }
