@@ -1,15 +1,17 @@
 import { useEffect, useRef } from "react";
 import css from "./StreamView.module.scss";
-import hideIcon from "../../assets/icons8-expand-arrow-64.png";
 import { useStreamStats } from "../../hooks/useStreamStats";
 import { ClientID } from "../../services/RoomService";
 import { WebRTCService } from "../../services/webrtc/WebRTCService";
+import FullscreenIcon from "../../assets/icons8-full-screen.svg?react";
+import ArrowDown from "../../assets/icons8-chevron-down.svg?react";
+import { LOCAL_STREAM_ID } from "../../hooks/useStreams";
 
 interface StreamViewProps {
     videoSrc: MediaStream | undefined;
     onHideStream: () => void;
     webrtcService: WebRTCService;
-    remoteClientID: ClientID;
+    clientID: ClientID;
 }
 
 export default function StreamView(props: StreamViewProps) {
@@ -17,7 +19,7 @@ export default function StreamView(props: StreamViewProps) {
 
     const { stats: streamStats } = useStreamStats(
         props.webrtcService,
-        props.remoteClientID
+        props.clientID
     );
 
     useEffect(() => {
@@ -42,23 +44,32 @@ export default function StreamView(props: StreamViewProps) {
                 )}
 
                 <div className={css.overlay}>
-                    <div
-                        className={`${css.streamerDisplayName} ${css.overlayElement}`}
-                    >
-                        {props.remoteClientID}
+                    <div className={css.streamerDisplayName}>
+                        {props.clientID === LOCAL_STREAM_ID
+                            ? "Dein Stream"
+                            : props.clientID}
                     </div>
-                    <div
-                        className={`${css.streamQuality} ${css.overlayElement}`}
-                    >
-                        {streamStats?.frameHeight}p@
-                        {streamStats?.framesPerSecond}fps
-                    </div>
+
+                    {streamStats ? (
+                        <div className={css.streamQuality}>
+                            {streamStats?.frameHeight}p@
+                            {streamStats?.framesPerSecond}fps
+                        </div>
+                    ) : null}
+
                     <button
                         className={`${css.hideStreamButton} tooltip-on-hover`}
                         onClick={() => props.onHideStream()}
                     >
-                        <img src={hideIcon} alt="" />
+                        <ArrowDown></ArrowDown>
                         <span className="tooltip top">Stream ausblenden</span>
+                    </button>
+
+                    <button
+                        className={`${css.fullscreenButton} tooltip-on-hover`}
+                    >
+                        <FullscreenIcon></FullscreenIcon>
+                        <span className="tooltip top">Vollbild</span>
                     </button>
                 </div>
             </div>

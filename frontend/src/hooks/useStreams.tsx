@@ -13,7 +13,7 @@ export type Stream = {
     srcObject: MediaStream | undefined;
 };
 
-const LOCAL_STREAM_ID = "localStream";
+export const LOCAL_STREAM_ID = "localStream";
 
 /**
  * Hook to manage and update the state of available streams.

@@ -64,7 +64,7 @@ export default function Room() {
                                                 false
                                             );
                                         }}
-                                        remoteClientID={stream.clientID}
+                                        clientID={stream.clientID}
                                         webrtcService={
                                             webrtcServiceRef.current!
                                         }
