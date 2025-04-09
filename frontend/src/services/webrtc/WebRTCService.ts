@@ -102,16 +102,12 @@ export class WebRTCService
      * It is also called when a remote client wants to connect to the local client.
      */
     private setupPeer(remoteClientID: ClientID) {
-        console.log("setupPeer", remoteClientID);
-
         assert(!this.peers.has(remoteClientID), "Peer already exists");
 
         const peer: Peer = new PerfectPeer(this.roomService, remoteClientID);
         this.peers.set(remoteClientID, peer);
 
         peer.setTrackReceivedCallback(stream => {
-            console.log("SERVICE: received remote stream", stream);
-
             this.notify({ clientID: remoteClientID, stream });
         });
 
@@ -140,8 +136,6 @@ export class WebRTCService
         this.peers.forEach(peer => {
             peer.start(stream);
         });
-
-        console.log("Setting local stream for ALL peers");
     }
 
     public subscribe(

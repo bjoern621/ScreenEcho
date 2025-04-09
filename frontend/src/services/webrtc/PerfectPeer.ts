@@ -49,11 +49,7 @@ export class PerfectPeer implements Peer {
     }
 
     private handleIncomingTracks() {
-        this.peerConnection.ontrack = ({ track, streams }) => {
-            console.log(track.getSettings().aspectRatio);
-            console.log(track.getSettings().frameRate);
-            console.log(track.getSettings().width);
-
+        this.peerConnection.ontrack = ({ streams }) => {
             if (streams.length != 1) {
                 return;
             }
@@ -66,8 +62,6 @@ export class PerfectPeer implements Peer {
 
     private handleNegotiationNeeded() {
         this.peerConnection.onnegotiationneeded = async () => {
-            console.log("Negotiation needed");
-
             this.makingOffer = true;
 
             const [, err] = await errorAsValue(
@@ -76,8 +70,6 @@ export class PerfectPeer implements Peer {
             if (err) {
                 console.error("Error setting local description:", err);
             } else {
-                console.log("here");
-
                 const descriptionMessage: TypedMessage<SDPMessage> = {
                     type: SDP_MESSAGE_TYPE,
                     msg: {
@@ -106,14 +98,11 @@ export class PerfectPeer implements Peer {
                 this.roomService.sendMessage(iceCandidateMessage);
             } else {
                 /* There are no more candidates coming during this negotiation */
-                console.log("ICE candidate gathering finished");
             }
         };
     }
 
     private async handleRemoteSDPMessage(msg: TypedMessage<SDPMessage>) {
-        console.log(this.remoteClientID + " received SDP message");
-
         const readyForOffer =
             !this.makingOffer &&
             (this.peerConnection.signalingState === "stable" ||
@@ -184,11 +173,8 @@ export class PerfectPeer implements Peer {
     }
 
     public start(mediaStream: MediaStream | undefined): void {
-        console.log("Making perfect call");
-
         if (mediaStream) {
             mediaStream.getTracks().forEach(track => {
-                console.log("Adding track: ", track);
                 this.peerConnection.addTrack(track, mediaStream);
             });
         } else {
