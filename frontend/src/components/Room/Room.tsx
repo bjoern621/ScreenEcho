@@ -9,6 +9,7 @@ import { RoomService } from "../../services/RoomService";
 import { StreamsService } from "../../services/StreamsService";
 import { useStreams } from "../../hooks/useStreams";
 import { WebRTCService } from "../../services/webrtc/WebRTCService";
+import Boring from "../../assets/emojis/icons8-boring.svg?react";
 
 export default function Room() {
     const { roomID } = useParams();
@@ -41,11 +42,9 @@ export default function Room() {
             Room: {roomID}
             {streams.length == 0 ? (
                 <div className={css.noActiveStreams}>
-                    <img
-                        src="/src/assets/sad.png"
-                        alt="Sad face emoji"
-                        style={{ width: "75px" }}
-                    />
+                    <div className={css.emojiContainer}>
+                        <Boring></Boring>
+                    </div>
                     Aktuell teilt niemand seinen Bildschirm. <br />
                     Teile deinen Bildschirm über das Menü unten!
                 </div>
