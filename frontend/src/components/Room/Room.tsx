@@ -8,7 +8,7 @@ import InactiveStreams from "../InactiveStreams/InactiveStreams";
 import { RoomService } from "../../services/RoomService";
 import { StreamsService } from "../../services/StreamsService";
 import { LOCAL_STREAM_ID, useStreams } from "../../hooks/useStreams";
-import { WebRTCService } from "../../services/WebRTCService";
+import { WebRTCService } from "../../services/webrtc/WebRTCService";
 
 export default function Room() {
     const { roomID } = useParams();

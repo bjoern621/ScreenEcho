@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { StreamsService } from "../services/StreamsService";
 import { ClientID } from "../services/RoomService";
-import { WebRTCService } from "../services/WebRTCService";
+import { WebRTCService } from "../services/webrtc/WebRTCService";
 
 export type Stream = {
     clientID: ClientID;

@@ -1,12 +1,12 @@
 import errorAsValue from "../../util/ErrorAsValue";
 import { ClientID, RoomService, TypedMessage } from "../RoomService";
-import {
-    NEW_ICE_CANDIDATE_MESSAGE_TYPE,
-    NEWIceCandidateMessage,
-    SDP_MESSAGE_TYPE,
-    SDPMessage,
-} from "../WebRTCService";
 import { Peer } from "./Peer";
+import {
+    SDPMessage,
+    SDP_MESSAGE_TYPE,
+    NEWIceCandidateMessage,
+    NEW_ICE_CANDIDATE_MESSAGE_TYPE,
+} from "./WebRTCService";
 
 const RTCConfig: RTCConfiguration = {
     iceServers: [

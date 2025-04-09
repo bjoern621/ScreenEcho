@@ -1,9 +1,9 @@
-import { assert } from "../util/Assert";
-import { IObservable, Observable } from "../util/observer/Observable";
-import { Observer } from "../util/observer/Observer";
-import { ClientID, RoomService, TypedMessage } from "./RoomService";
-import { Peer } from "./WebRTC/Peer";
-import { PerfectPeer } from "./WebRTC/PerfectPeer";
+import { assert } from "../../util/Assert";
+import { IObservable, Observable } from "../../util/observer/Observable";
+import { Observer } from "../../util/observer/Observer";
+import { ClientID, RoomService, TypedMessage } from "../RoomService";
+import { Peer } from "./Peer";
+import { PerfectPeer } from "./PerfectPeer";
 
 export const NEW_ICE_CANDIDATE_MESSAGE_TYPE: string = "new-ice-candidate";
 export const SDP_MESSAGE_TYPE: string = "sdp-message";
