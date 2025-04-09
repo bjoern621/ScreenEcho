@@ -66,6 +66,9 @@ export default function StreamView(props: StreamViewProps) {
                     </button>
 
                     <button
+                        onClick={() =>
+                            void videoElem.current!.requestFullscreen()
+                        }
                         className={`${css.fullscreenButton} tooltip-on-hover`}
                     >
                         <FullscreenIcon></FullscreenIcon>
