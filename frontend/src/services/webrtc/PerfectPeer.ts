@@ -145,10 +145,10 @@ export class PerfectPeer implements Peer {
             this.roomService.sendMessage(descriptionMessage);
         }
 
-        const remoteDesc = new RTCSessionDescription(msg.msg.description);
-        const [,] = await errorAsValue(
-            this.peerConnection.setRemoteDescription(remoteDesc)
-        );
+        // const remoteDesc = new RTCSessionDescription(msg.msg.description);
+        // const [,] = await errorAsValue(
+        //     this.peerConnection.setRemoteDescription(remoteDesc)
+        // );
     }
 
     private async handleRemoteICECandidate(
