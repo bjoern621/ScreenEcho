@@ -19,8 +19,6 @@ const RTCConfig: RTCConfiguration = {
 export class PerfectPeer implements Peer {
     private peerConnection!: RTCPeerConnection;
 
-    private localStream: MediaStream | undefined = undefined;
-
     private readonly roomService: RoomService;
 
     private readonly remoteClientID: ClientID;
@@ -30,6 +28,9 @@ export class PerfectPeer implements Peer {
     private ignoreOffer = false;
     private isSettingRemoteAnswerPending = false;
     private readonly polite: boolean;
+
+    private trackReceivedCallback: ((stream: MediaStream) => void) | undefined =
+        undefined;
 
     public constructor(roomService: RoomService, remoteClientID: ClientID) {
         this.roomService = roomService;
@@ -49,15 +50,17 @@ export class PerfectPeer implements Peer {
 
     private handleIncomingTracks() {
         this.peerConnection.ontrack = ({ track, streams }) => {
-            track.onunmute = () => {
-                console.log("received remote track");
+            console.log(track.getSettings().aspectRatio);
+            console.log(track.getSettings().frameRate);
+            console.log(track.getSettings().width);
 
-                if (streams.length != 1) {
-                    return;
-                }
+            if (streams.length != 1) {
+                return;
+            }
 
-                // this.notify({ clientID, stream: streams[0] });
-            };
+            if (this.trackReceivedCallback) {
+                this.trackReceivedCallback(streams[0]);
+            }
         };
     }
 
@@ -73,6 +76,8 @@ export class PerfectPeer implements Peer {
             if (err) {
                 console.error("Error setting local description:", err);
             } else {
+                console.log("here");
+
                 const descriptionMessage: TypedMessage<SDPMessage> = {
                     type: SDP_MESSAGE_TYPE,
                     msg: {
@@ -178,13 +183,13 @@ export class PerfectPeer implements Peer {
         );
     }
 
-    public makeCall(): void {
+    public start(mediaStream: MediaStream | undefined): void {
         console.log("Making perfect call");
 
-        if (this.localStream) {
-            this.localStream.getTracks().forEach(track => {
+        if (mediaStream) {
+            mediaStream.getTracks().forEach(track => {
                 console.log("Adding track: ", track);
-                this.peerConnection.addTrack(track, this.localStream!);
+                this.peerConnection.addTrack(track, mediaStream);
             });
         } else {
             this.peerConnection.addTransceiver("video", {
@@ -196,13 +201,9 @@ export class PerfectPeer implements Peer {
         }
     }
 
-    public setLocalStream(mediaStream: MediaStream): void {
-        this.localStream = mediaStream;
-
-        // Effectively, this triggers a negotiation needed event
-        this.localStream.getTracks().forEach(track => {
-            console.log("Adding track after local stream: ", track);
-            this.peerConnection.addTrack(track, this.localStream!);
-        });
+    public setTrackReceivedCallback(
+        callback: (stream: MediaStream) => void
+    ): void {
+        this.trackReceivedCallback = callback;
     }
 }

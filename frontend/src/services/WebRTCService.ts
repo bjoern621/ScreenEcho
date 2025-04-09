@@ -25,7 +25,7 @@ export class WebRTCService
 
     private readonly peers: Map<ClientID, Peer> = new Map();
 
-    private readonly observable: IObservable<{
+    private readonly remoteStreamObservable: IObservable<{
         clientID: ClientID;
         stream: MediaStream;
     }> = new Observable<{ clientID: ClientID; stream: MediaStream }>();
@@ -94,23 +94,28 @@ export class WebRTCService
         assert(!this.peers.has(clientID), "Connection to peer already exists");
 
         this.setupPeer(clientID);
-
-        this.peers.get(clientID)!.makeCall();
     }
 
-    private setupPeer(clientID: ClientID) {
-        console.log("setupPeer", clientID);
+    /**
+     * Sets up a new peer connection for the specified remote client ID.
+     * This is called just before the local client makes a call to a remote client.
+     * It is also called when a remote client wants to connect to the local client.
+     */
+    private setupPeer(remoteClientID: ClientID) {
+        console.log("setupPeer", remoteClientID);
 
-        assert(!this.peers.has(clientID), "Peer already exists");
+        assert(!this.peers.has(remoteClientID), "Peer already exists");
 
-        const peer: Peer = new PerfectPeer(this.roomService, clientID);
-        this.peers.set(clientID, peer);
+        const peer: Peer = new PerfectPeer(this.roomService, remoteClientID);
+        this.peers.set(remoteClientID, peer);
 
-        // TODO double renegotiation? currently?
+        peer.setTrackReceivedCallback(stream => {
+            console.log("SERVICE: received remote stream", stream);
 
-        if (this.localStream) {
-            peer.setLocalStream(this.localStream);
-        }
+            this.notify({ clientID: remoteClientID, stream });
+        });
+
+        peer.start(this.localStream);
     }
 
     /**
@@ -128,27 +133,21 @@ export class WebRTCService
         this.localStream = stream;
 
         console.log("Setting local stream for ALL peers");
-
-        this.peers.forEach(peer => {
-            console.log("Setting local stream for peer", peer);
-
-            peer.setLocalStream(stream);
-        });
     }
 
     public subscribe(
         observer: Observer<{ clientID: ClientID; stream: MediaStream }>
     ): void {
-        this.observable.subscribe(observer);
+        this.remoteStreamObservable.subscribe(observer);
     }
 
     public unsubscribe(
         observer: Observer<{ clientID: ClientID; stream: MediaStream }>
     ): void {
-        this.observable.unsubscribe(observer);
+        this.remoteStreamObservable.unsubscribe(observer);
     }
 
     public notify(data: { clientID: ClientID; stream: MediaStream }): void {
-        this.observable.notify(data);
+        this.remoteStreamObservable.notify(data);
     }
 }
