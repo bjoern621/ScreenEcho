@@ -1,6 +1,7 @@
+import { never } from "../../util/Assert";
 import errorAsValue from "../../util/ErrorAsValue";
 import { ClientID, RoomService, TypedMessage } from "../RoomService";
-import { Peer } from "./Peer";
+import { Peer, StreamStats } from "./Peer";
 import {
     SDPMessage,
     SDP_MESSAGE_TYPE,
@@ -50,6 +51,8 @@ export class PerfectPeer implements Peer {
 
     private handleIncomingTracks() {
         this.peerConnection.ontrack = ({ streams }) => {
+            console.log("Track received:", streams[0]);
+
             if (streams.length != 1) {
                 return;
             }
@@ -191,5 +194,41 @@ export class PerfectPeer implements Peer {
         callback: (stream: MediaStream) => void
     ): void {
         this.trackReceivedCallback = callback;
+    }
+
+    public async getStats(): Promise<StreamStats> {
+        const [stats, err] = await errorAsValue(this.peerConnection.getStats());
+        if (err) {
+            never(
+                "There is no RTCRtpSender or RTCRtpReceiver whose track matches the specified selector, or selector matches more than one sender or receiver. " +
+                    err.message
+            );
+        }
+
+        const streamStats: StreamStats = {
+            codec: "",
+            frameWidth: undefined,
+            frameHeight: undefined,
+            framesPerSecond: undefined,
+            jitter: undefined,
+        };
+
+        stats.forEach((report: RTCStats) => {
+            if (report.type === "codec") {
+                streamStats.codec = (report as unknown as RTCRtpCodec).mimeType;
+            } else if (
+                report.type === "inbound-rtp" &&
+                (report as RTCRtpStreamStats).kind === "video"
+            ) {
+                const inboundReport = report as RTCInboundRtpStreamStats;
+
+                streamStats.frameWidth = inboundReport.frameWidth;
+                streamStats.frameHeight = inboundReport.frameHeight;
+                streamStats.framesPerSecond = inboundReport.framesPerSecond;
+                streamStats.jitter = inboundReport.jitter;
+            }
+        });
+
+        return streamStats;
     }
 }

@@ -2,7 +2,7 @@ import { assert } from "../../util/Assert";
 import { IObservable, Observable } from "../../util/observer/Observable";
 import { Observer } from "../../util/observer/Observer";
 import { ClientID, RoomService, TypedMessage } from "../RoomService";
-import { Peer } from "./Peer";
+import { Peer, StreamStats } from "./Peer";
 import { PerfectPeer } from "./PerfectPeer";
 
 export const NEW_ICE_CANDIDATE_MESSAGE_TYPE: string = "new-ice-candidate";
@@ -136,6 +136,17 @@ export class WebRTCService
         this.peers.forEach(peer => {
             peer.start(stream);
         });
+    }
+
+    /**
+     * Gets the current video statistics for a specific client from the WebRTC connection.
+     * The promise will never reject.
+     * The caller must assure that there is a connection setup to the remote client.
+     */
+    public getStats(remoteClientID: ClientID): Promise<StreamStats> {
+        assert(this.peers.has(remoteClientID), "Peer does not exist");
+
+        return this.peers.get(remoteClientID)!.getStats();
     }
 
     public subscribe(

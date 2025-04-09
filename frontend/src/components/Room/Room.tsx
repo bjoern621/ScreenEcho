@@ -7,7 +7,7 @@ import * as Assert from "../../util/Assert";
 import InactiveStreams from "../InactiveStreams/InactiveStreams";
 import { RoomService } from "../../services/RoomService";
 import { StreamsService } from "../../services/StreamsService";
-import { LOCAL_STREAM_ID, useStreams } from "../../hooks/useStreams";
+import { useStreams } from "../../hooks/useStreams";
 import { WebRTCService } from "../../services/webrtc/WebRTCService";
 
 export default function Room() {
@@ -33,10 +33,8 @@ export default function Room() {
         webrtcServiceRef.current = new WebRTCService(roomServiceRef.current);
     }
 
-    const { streams, setLocalStream, setBeingWatched } = useStreams(
-        streamsServiceRef.current,
-        webrtcServiceRef.current
-    );
+    const { streams, setLocalStream, setBeingWatched, isLocalStreamActive } =
+        useStreams(streamsServiceRef.current, webrtcServiceRef.current);
 
     return (
         <div className={css.container}>
@@ -66,6 +64,10 @@ export default function Room() {
                                                 false
                                             );
                                         }}
+                                        remoteClientID={stream.clientID}
+                                        webrtcService={
+                                            webrtcServiceRef.current!
+                                        }
                                     />
                                 ) : null
                             )}
@@ -80,9 +82,7 @@ export default function Room() {
                 </>
             )}
             <ControlMenu
-                isStreaming={streams.some(
-                    stream => stream.clientID === LOCAL_STREAM_ID
-                )}
+                isStreaming={isLocalStreamActive}
                 onStartStream={(captureStream: MediaStream) => {
                     setLocalStream(captureStream);
 
