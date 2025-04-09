@@ -132,6 +132,15 @@ export class WebRTCService
     public setLocalStream(stream: MediaStream): void {
         this.localStream = stream;
 
+        // TODO it may happen that the local stream is set in a peer connection where the remote client doesnt want to view the stream.
+        // In this case, we should not set the local stream for that peer connection.
+        // ? Local stream should be set, if at least one remote is watching / wants to watch the stream. ?
+
+        // Iterate over all peers and set the local stream for each one
+        this.peers.forEach(peer => {
+            peer.start(stream);
+        });
+
         console.log("Setting local stream for ALL peers");
     }
 
