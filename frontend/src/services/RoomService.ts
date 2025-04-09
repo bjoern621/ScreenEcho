@@ -62,7 +62,7 @@ export class RoomService {
         );
 
         this.roomSocket.onmessage = async event => {
-            console.log("response from server: " + event.data);
+            // console.log("response from server: " + event.data);
 
             if (typeof event.data !== "string") {
                 console.error("Invalid message data type:", typeof event.data);
