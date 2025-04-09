@@ -30,10 +30,11 @@ export class WebRTCService
         stream: MediaStream;
     }> = new Observable<{ clientID: ClientID; stream: MediaStream }>();
 
+    // The local stream is saved here, so it can be added to new peer connections later.
+    private localStream: MediaStream | undefined = undefined;
+
     public constructor(roomService: RoomService) {
         this.roomService = roomService;
-
-        // TODO timeout test (comment out)
 
         this.forwardSDPMessageToRespectivePeer();
         this.forwardICECandidateToRespectivePeer();
@@ -98,10 +99,18 @@ export class WebRTCService
     }
 
     private setupPeer(clientID: ClientID) {
+        console.log("setupPeer", clientID);
+
         assert(!this.peers.has(clientID), "Peer already exists");
 
         const peer: Peer = new PerfectPeer(this.roomService, clientID);
         this.peers.set(clientID, peer);
+
+        // TODO double renegotiation? currently?
+
+        if (this.localStream) {
+            peer.setLocalStream(this.localStream);
+        }
     }
 
     /**
@@ -110,6 +119,21 @@ export class WebRTCService
      */
     public hasPeerConnection(clientID: ClientID): boolean {
         return this.peers.has(clientID);
+    }
+
+    /**
+     * Sets the local media stream for all connected peers.
+     */
+    public setLocalStream(stream: MediaStream): void {
+        this.localStream = stream;
+
+        console.log("Setting local stream for ALL peers");
+
+        this.peers.forEach(peer => {
+            console.log("Setting local stream for peer", peer);
+
+            peer.setLocalStream(stream);
+        });
     }
 
     public subscribe(

@@ -19,7 +19,7 @@ const RTCConfig: RTCConfiguration = {
 export class PerfectPeer implements Peer {
     private peerConnection!: RTCPeerConnection;
 
-    private localStream: MediaStream | null = null;
+    private localStream: MediaStream | undefined = undefined;
 
     private readonly roomService: RoomService;
 
@@ -198,5 +198,11 @@ export class PerfectPeer implements Peer {
 
     public setLocalStream(mediaStream: MediaStream): void {
         this.localStream = mediaStream;
+
+        // Effectively, this triggers a negotiation needed event
+        this.localStream.getTracks().forEach(track => {
+            console.log("Adding track after local stream: ", track);
+            this.peerConnection.addTrack(track, this.localStream!);
+        });
     }
 }

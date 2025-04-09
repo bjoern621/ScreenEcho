@@ -90,7 +90,7 @@ export default function Room() {
                     streamsServiceRef.current.sendStreamStartedMessage();
 
                     Assert.assert(webrtcServiceRef.current);
-                    // webrtcServiceRef.current.setLocalStream(captureStream);
+                    webrtcServiceRef.current.setLocalStream(captureStream);
                 }}
                 onEndStream={() => {
                     setLocalStream(undefined);
