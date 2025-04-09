@@ -13,8 +13,8 @@ const streamOptions: DisplayMediaStreamOptions = {
     video: {
         displaySurface: "monitor",
         frameRate: 120,
-        width: 1920,
-        height: 1080,
+        width: 2560,
+        height: 1440,
     },
     audio: true,
 };
