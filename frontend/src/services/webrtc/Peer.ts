@@ -9,7 +9,7 @@ export interface Peer {
     /**
      * Establishes a WebRTC connection with the remote peer associated with this peer.
      * `mediaStream` is the local media stream that will be sent to the remote peer.
-     * `makeCall` can be called multiple times if needed (e.g. the local stream changes).
+     * `start` can be called multiple times if needed (e.g. the local stream changes).
      * If `mediaStream` is `undefined`, the peer will only receive media tracks.
      */
     start(mediaStream: MediaStream | undefined): void;
@@ -23,7 +23,6 @@ export interface Peer {
      * This method is called when an ICE candidate message, that is specific to this peer, is received.
      */
     onICECandidateReceived(msg: TypedMessage<unknown>): Promise<void>;
-
 
     setTrackReceivedCallback(callback: (stream: MediaStream) => void): void;
 }
