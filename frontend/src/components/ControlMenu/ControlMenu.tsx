@@ -16,7 +16,7 @@ const streamOptions: DisplayMediaStreamOptions = {
         width: 1920,
         height: 1080,
     },
-    audio: false,
+    audio: true,
 };
 
 export default function ControlMenu(props: ControlMenuProps) {
