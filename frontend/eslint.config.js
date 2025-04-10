@@ -36,6 +36,15 @@ export default tseslint.config(
             ],
             "@typescript-eslint/explicit-member-accessibility": "error",
             "@typescript-eslint/prefer-readonly": "error",
+            // Ban try-catch blocks in favor of errorAsValue
+            "no-restricted-syntax": [
+                "error",
+                {
+                    selector: "TryStatement",
+                    message:
+                        "Use errorAsValue() instead of try-catch blocks for better error handling.",
+                },
+            ],
         },
     }
 );
