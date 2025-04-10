@@ -62,7 +62,7 @@ $overlay-hide-delay: $overlay-elements-hide-delay + 0.2s;
     transition: box-shadow 0.3s ease-out;
     transition-delay: $overlay-show-delay;
 
-    :not(&:hover) {
+    :not(&:hover) & {
         transition-delay: $overlay-hide-delay;
     }
 }
