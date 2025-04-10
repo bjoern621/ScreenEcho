@@ -40,6 +40,12 @@
     align-items: center;
 }
 
+$overlay-show-delay: 0.1s;
+$overlay-elements-show-delay: $overlay-show-delay + 0.3s;
+
+$overlay-elements-hide-delay: 0.2s;
+$overlay-hide-delay: $overlay-elements-hide-delay + 0.2s;
+
 .overlay {
     position: absolute;
     top: 0;
@@ -53,8 +59,12 @@
             inset 0 55px 35px -35px rgba(0, 0, 0, 0.5);
     }
 
-    transition: all 0.3s ease-out;
-    transition-delay: 0.1s;
+    transition: box-shadow 0.3s ease-out;
+    transition-delay: $overlay-show-delay;
+
+    :not(&:hover) {
+        transition-delay: $overlay-hide-delay;
+    }
 }
 
 %top-left {
@@ -81,14 +91,33 @@
     right: 10px;
 }
 
-.streamer-display-name {
-    @extend %top-left;
-    @extend %overlay-element-top;
+%overlay-element {
+    transition-property: transform, opacity;
+    transition-duration: 0.2s;
+    transition-timing-function: ease-out;
+    transition-delay: $overlay-elements-show-delay;
+
+    .overlay:not(:hover) & {
+        transition-delay: $overlay-elements-hide-delay;
+    }
 }
 
-.stream-quality {
-    @extend %top-right;
-    @extend %overlay-element-top;
+%overlay-element-top {
+    @extend %overlay-element;
+
+    .overlay:not(:hover) & {
+        transform: translateY(5px);
+        opacity: 0;
+    }
+}
+
+%overlay-element-bottom {
+    @extend %overlay-element;
+
+    .overlay:not(:hover) & {
+        transform: translateY(5px);
+        opacity: 0;
+    }
 }
 
 %hover-shadow {
@@ -97,6 +126,16 @@
     &:hover {
         background-color: rgba(0, 0, 0, 0.8);
     }
+}
+
+.streamer-display-name {
+    @extend %top-left;
+    @extend %overlay-element-top;
+}
+
+.stream-quality {
+    @extend %top-right;
+    @extend %overlay-element-top;
 }
 
 .hide-stream-button {
@@ -109,32 +148,6 @@
     translate: -50%;
 
     width: 40px;
-    height: 40px;
-}
-
-%overlay-element {
-    transition-property: translate, opacity;
-    transition-duration: 0.2s;
-    transition-timing-function: ease-out;
-    transition-delay: 0.1s;
-}
-
-%overlay-element-top {
-    @extend %overlay-element;
-
-    .overlay:not(:hover) & {
-        translate: 0 -5px;
-        opacity: 0;
-    }
-}
-
-%overlay-element-bottom {
-    @extend %overlay-element;
-
-    .overlay:not(:hover) & {
-        translate: 0 5px;
-        opacity: 0;
-    }
 }
 
 .fullscreen-button {

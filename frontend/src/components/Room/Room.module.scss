@@ -44,9 +44,15 @@
     align-items: center;
     text-align: center;
     gap: 25px;
+
+    font-size: 1.25rem;
 }
 
-// TODO add hover animation
 .emoji-container {
-    width: 100px;
+    width: 120px;
+
+    > svg {
+        filter: drop-shadow(0 1px 3px 0 var(--shadow))
+            drop-shadow(0 1px 2px -1px var(--shadow));
+    }
 }

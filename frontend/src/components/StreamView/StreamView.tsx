@@ -4,7 +4,7 @@ import { useStreamStats } from "../../hooks/useStreamStats";
 import { ClientID } from "../../services/RoomService";
 import { WebRTCService } from "../../services/webrtc/WebRTCService";
 import FullscreenIcon from "../../assets/icons8-full-screen.svg?react";
-import ArrowDown from "../../assets/icons8-chevron-down.svg?react";
+import ArrowDown from "../../assets/icons8-expand-arrow.svg?react";
 import { LOCAL_STREAM_ID } from "../../hooks/useStreams";
 
 interface StreamViewProps {
