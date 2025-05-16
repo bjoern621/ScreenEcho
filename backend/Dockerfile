@@ -1,4 +1,4 @@
-FROM golang:1.24.0 AS go-build
+FROM golang:1.24 AS go-build
 WORKDIR /app
 
 COPY go.mod ./
@@ -10,7 +10,7 @@ RUN go build -o start-server
 
 # Go build complete
 
-FROM gcr.io/distroless/base-debian12
+FROM gcr.io/distroless/base-debian12:nonroot
 WORKDIR /app
 
 COPY --from=go-build /app/start-server ./
