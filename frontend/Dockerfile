@@ -1,4 +1,4 @@
-FROM node:23.8.0 AS react-build
+FROM node:24-slim AS react-build
 WORKDIR /app
 
 COPY package.json ./
