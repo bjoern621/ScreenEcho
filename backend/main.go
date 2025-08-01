@@ -6,6 +6,7 @@ import (
 
 	"bjoernblessin.de/screenecho/clients"
 	"bjoernblessin.de/screenecho/connection"
+	"bjoernblessin.de/screenecho/middleware"
 	"bjoernblessin.de/screenecho/rooms"
 	"bjoernblessin.de/screenecho/signaling"
 	"bjoernblessin.de/screenecho/streams"
@@ -24,8 +25,15 @@ func main() {
 
 	signaling.NewSignalingManager(clientManager)
 
-	http.HandleFunc("/room/{roomID}/connect", roomManager.HandleConnect)
-	// http.HandleFunc("/room/create", rooms.HandleCreate)
-	// http.HandleFunc("/room/sdp", signaling.HandleSDPOffer)
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	mux := http.NewServeMux()
+
+	mux.HandleFunc("GET /room/{roomID}/connect", roomManager.HandleConnect)
+	mux.HandleFunc("GET /room/generate-id", roomManager.GenerateIDHandler)
+
+	server := &http.Server{
+		Addr:    ":8080",
+		Handler: middleware.Logging(middleware.CORS(mux)),
+	}
+
+	log.Fatal(server.ListenAndServe())
 }

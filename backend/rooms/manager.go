@@ -5,6 +5,8 @@
 package rooms
 
 import (
+	"encoding/json"
+	"math/rand"
 	"net/http"
 	"sync"
 
@@ -27,11 +29,17 @@ func NewRoomManager(clientManager *clients.ClientManager) *RoomManager {
 	}
 }
 
+// createEmptyRoom creates a new empty room with the given roomID.
+// There must be no existing room with the given roomID.
+// The function is not synchronized, so it must be called with the roomsMutex locked.
 func (rm *RoomManager) createEmptyRoom(roomID RoomID) *Room {
-	newRoom := NewRoom(roomID, rm.clientManager)
+	// rm.roomsMutex.Lock()
+	// defer rm.roomsMutex.Unlock()
 
-	rm.roomsMutex.Lock()
-	defer rm.roomsMutex.Unlock()
+	_, exists := rm.rooms[roomID]
+	assert.Assert(!exists, "room with this ID already exists")
+
+	newRoom := NewRoom(roomID, rm.clientManager)
 
 	rm.rooms[roomID] = newRoom
 
@@ -55,12 +63,6 @@ func (rm *RoomManager) GetUsersRoom(clientID clients.ClientID) *Room {
 	return nil
 }
 
-// GetByID does exactly that.
-// The returned Room may be nil if the room with roomID doesn't exist.
-func (rm *RoomManager) GetRoomById(roomID RoomID) *Room {
-	return rm.rooms[roomID]
-}
-
 // HandleConnect handles an HTTP request to establish a connection to a room.
 // The HTTP request is send to the connection package to establish a connection.
 // It is the main entry point for connecting clients.
@@ -71,11 +73,15 @@ func (rm *RoomManager) HandleConnect(writer http.ResponseWriter, request *http.R
 	}
 	roomID := RoomID(roomIDString)
 
-	room := rm.GetRoomById(roomID)
-	if room == nil {
+	rm.roomsMutex.Lock()
+
+	room, exists := rm.rooms[roomID]
+	if !exists {
 		room = rm.createEmptyRoom(roomID)
 	}
 	assert.Assert(room != nil)
+
+	rm.roomsMutex.Unlock()
 
 	client, err := rm.clientManager.NewClient(writer, request)
 	if err != nil {
@@ -123,4 +129,49 @@ func (rm *RoomManager) notifyClientJoinHandlers(room *Room, client *clients.Clie
 	for _, joinHandler := range rm.clientJoinHandlers {
 		joinHandler(room, client)
 	}
+}
+
+type GenerateIDResponse struct {
+	RoomID RoomID `json:"roomID"`
+}
+
+func (rm *RoomManager) GenerateIDHandler(writer http.ResponseWriter, request *http.Request) {
+	rm.roomsMutex.Lock()
+	defer rm.roomsMutex.Unlock()
+
+	writer.Header().Set("Access-Control-Allow-Origin", "*")
+
+	maxAttempts := 10
+	for range maxAttempts {
+		roomID := GenerateRoomID()
+
+		if _, exists := rm.rooms[roomID]; exists {
+			continue
+		}
+
+		rm.createEmptyRoom(roomID)
+
+		response, err := json.Marshal(GenerateIDResponse{RoomID: roomID})
+		assert.IsNil(err, "failed to marshal response")
+
+		writer.WriteHeader(http.StatusOK)
+		writer.Write(response)
+		return
+	}
+
+	writer.WriteHeader(http.StatusServiceUnavailable)
+	writer.Write([]byte("Unable to generate a unique room ID, please try again."))
+}
+
+// GenerateRoomID creates a random alphanumeric room ID.
+func GenerateRoomID() RoomID {
+	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	const length = 6
+
+	result := make([]byte, length)
+	for i := range length {
+		result[i] = charset[rand.Intn(len(charset))]
+	}
+
+	return RoomID(result)
 }
