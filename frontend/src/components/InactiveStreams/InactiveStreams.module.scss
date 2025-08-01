@@ -13,6 +13,7 @@
 
     &:active {
         scale: 0.95;
+        background-color: var(--shadow);
     }
 
     transition: background-color 0.1s, scale 0.05s;
