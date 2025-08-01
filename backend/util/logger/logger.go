@@ -57,6 +57,10 @@ func init() {
 func initLogger() {
 	consoleLogger = log.New(os.Stderr, "", log.LstdFlags)
 
+	if !fileEnabled {
+		return
+	}
+
 	tempFile, err := os.CreateTemp("", "app-*.log")
 	if err != nil {
 		consoleLogger.Printf("Failed to create temp log file: %v", err)
@@ -183,7 +187,7 @@ func GetLogFilePath() string {
 	return logFilePath
 }
 
-// SetEnable sets whether logging is enabled or not.
+// SetEnable sets whether logging (console and file) is enabled or not.
 // Errors and panics will still be logged, but other log levels will not output anything if disabled.
 func SetEnable(enable bool) {
 	if enable {
@@ -195,12 +199,15 @@ func SetEnable(enable bool) {
 	}
 }
 
+// SetFileEnable sets whether file logging is enabled or not.
+// General logging (SetEnable) must also be enabled for file logging to work.
+// File logging must be initialized/enabled at the start of the application. Otherwise, no log file will be created.
 func SetFileEnable(enable bool) {
 	if enable {
 		fileEnabled = true
 		Infof("--- FILE LOGGING ENABLED ---")
 	} else {
-		fileEnabled = false
 		Infof("--- FILE LOGGING DISABLED ---")
+		fileEnabled = false
 	}
 }
